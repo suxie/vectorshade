@@ -7,7 +7,7 @@ var paths = [];
 getPathItemsInSelection(n, paths);
 
 div(); //first, divide the path into even segments
-//interpolate(); //second, interpolate
+interpolate(); //second, interpolate
 
 // Divide (length)
 // Copyright(c) 2006-2009 SATO Hiroyuki
@@ -69,10 +69,11 @@ function div() {
   }
   activeDocument.selection = paths;
 }
+
 function interpolate() {
   for (var h = 0; h < paths.length; h++) {
     //first, find bounding box vertices
-    var minX, minY, maxX, maxY, index1, index2, index3, index4;
+    var minX, minY, maxX, maxY;
     pnts = [];
     p = paths[h].pathPoints;
     var firstAnchor = p[0].anchor;
@@ -97,19 +98,257 @@ function interpolate() {
       }
     }
 
-    //TODO:
-    //then, find the four points that is closest to the vertices of the bounding box
+    var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
+    d1 = Number.MAX_VALUE;
+    d2 = Number.MAX_VALUE;
+    d3 = Number.MAX_VALUE;
+    d4 = Number.MAX_VALUE;
+
+    centerX = (minX + maxX) / 2;
+    centerY = (minY + maxY) / 2;
+
+    // find the four points that is closest to the vertices of the bounding box
     // formula is d=√((x_2-x_1)²+(y_2-y_1)²)
     for (i = 0; i < p.length; i++) {
       var point = p[i].anchor; //each point, first find its quadrant, then see if index1, 2, 3, 4 needs to be updated with the index of this point
-      
+      if (point[0] <= centerX && point[1] <= centerY) { // bottom left quad: 1
+        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY));
+        if (d < d1) {
+          index1 = i;
+          d1 = d;
+        }
+      } else if (point[0] >= centerX && point[1] <= centerY) { // bottom right quad: 2
+        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY));
+        if (d < d2) {
+          index2 = i;
+          d2 = d;
+        }
+      } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 3
+        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
+        if (d < d3) {
+          index3 = i;
+          d3 = d;
+        }
+      } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 4
+        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
+        if (d < d4) {
+          index4 = i;
+          d4 = d;
+        }
+      } 
     }
+
+    var h1, h2, v1, v2; // 4 sets of points: two horizontal edges, two vertical edges
+
+    if (index1 > index2 && index1 > index3 && index1 > index4) { // index1 is largest index
+      v2 = getEdgeNormal(index2, index3, p);
+      h2 = getEdgeNormal(index3, index4, p);
+
+      if (index4 > index2) { // final vertex is b/w 1 and 2
+        v1 = getEdgeNormal(index4, index1, p);
+        h1 = getEdgeSpecial(index1, index2, p);
+      } else {
+        h1 = getEdgeNormal(index1, index2, p);
+        v1 = getEdgeSpecial(index1, index4, p);
+      }
+
+    } else if (index2 > index1 && index2 > index3 && index2 > index4) { // index2 is largest index
+      h1 = getEdgeNormal(index3, index4, p);
+      v1 = getEdgeNormal(index4, index1, p);
+
+      if (index1 > index3) { // final vertex is b/w 2 and 3
+        h2 = getEdgeNormal(index1, index2, p);
+        v2 = getEdgeSpecial(index2, index3, p);
+      } else {
+        v2 = getEdgeNormal(index2, index3, p);
+        h2 = getEdgeSpecial(index1, index2, p);
+      }
+
+    } else if (index3 > index1 && index3 > index2 && index3 > index4) { // index3 is largest index
+      h1 = getEdgeNormal(index1, index2, p);
+      v1 = getEdgeNormal(index4, index1, p);
+
+      if (index2 > index4) { // final vertex is b/w 3 and 4
+        v2 = getEdgeNormal(index2, index3, p);
+        h2 = getEdgeSpecial(index4, index3, p);
+      } else {
+        h2 = getEdgeNormal(index3, index4, p);
+        v2 = getEdgeSpecial(index3, index2, p);
+      }
+
+    } else { // index4 is largest index
+      v2 = getEdgeNormal(index2, index3, p);
+      h1 = getEdgeNormal(index1, index2, p);
+
+      if (index3 > index1) { // final vertex is b/w 4 and 1
+        h2 = getEdgeNormal(index3, index4, p);
+        v1 = getEdgeSpecial(index4, index1, p);
+      } else {
+        v1 = getEdgeNormal(index1, index4, p);
+        h2 = getEdgeSpecial(index4, index3, p);
+      }
+    }
+
+    drawLine(h1, h2, centerY, centerX, 1, 1);
+    drawLine(v1, v2, centerX, centerY, 0, 1);
+    
+    // find midpoints
+    // var mid1X, mid1Y, mid2X, mid2Y, mid3X, mid3Y, mid4X, mid4Y;
+    // mid1X = (p[index1].anchor[0] + p[index2].anchor[0]) / 2;
+    // mid1Y = (p[index1].anchor[1] + p[index2].anchor[1]) / 2;
+    // mid2X = (p[index2].anchor[0] + p[index3].anchor[0]) / 2;
+    // mid2Y = (p[index2].anchor[1] + p[index3].anchor[1]) / 2;
+    // mid3X = (p[index3].anchor[0] + p[index4].anchor[0]) / 2;
+    // mid3Y = (p[index3].anchor[1] + p[index4].anchor[1]) / 2;
+    // mid4X = (p[index4].anchor[0] + p[index1].anchor[0]) / 2;
+    // mid4Y = (p[index4].anchor[1] + p[index1].anchor[1]) / 2;
+
+    // var mid1, mid2, mid3, mid4;
+
+    // d1 = Number.MAX_VALUE;
+    // d2 = Number.MAX_VALUE;
+    // d3 = Number.MAX_VALUE;
+    // d4 = Number.MAX_VALUE;
+    
+    // for (i = 0; i < p.length; i++) {
+    //   var point = p[i].anchor;
+    //   var d = ((point[0] - mid1X) * (point[0] - mid1X)) + ((point[1] - mid1Y) * (point[1] - mid1Y));
+      
+    // }
+
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
     //the line to be divided is defined by index1 +- 1, index4 +- i), (index2 +- i, index3 +- i))
     //create a new path with all the points
     //do this on the left/right side of the line again and again
   }  
+}
+
+// this is a helper function to get a list of point positions on an edge
+// between two vertices for a basic case
+function getEdgeNormal(v1, v2, p) {
+  var side = [];
+  start = Math.min(v1, v2);
+  end = Math.max(v1, v2);
+  for (i = start; i <= end; i++) {
+    side.push(p[i].anchor);
+  }
+  return side;
+}
+
+// this is a helper function to get a list of point positions on an edge
+// between two vertices for the special case where the edge contains 
+// the last index in the array, aka you have to loop back to the beginning of
+// the point array to get all the point values 
+function getEdgeSpecial(v1, v2, p) {
+  var side = [];
+  start = Math.max(v1, v2);
+  end = Math.min(v1, v2);
+  for (i = start; i < p.length; i++) {
+    side.push(p[i].anchor);
+  }
+  for (i = 0; i <= end; i++) {
+    side.push(p[i].anchor);
+  }
+  return side;
+}
+
+function drawLine(points1, points2, mid, split, horizontal, step) {
+  var doc = app.activeDocument;
+
+  if (step == 0) {
+    alert()
+    return;
+  } else {
+    var newline = [];
+    // var endpoints = findSubdivEndpoints(mid, split, horizontal);
+    // newline.push(endpoints[0]);
+    var m = points1.length;
+    var n = points2.length;
+    if (m > n) {
+      for (i = 0; i < m; i++) {
+        var point1 = points1[i];
+        var i2 = n - 1 - Math.floor(i * n / m);
+        var point2 = points2[i2];
+        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+      }
+    } else {
+      for (i = 0; i < n; i++) {
+        var point1 = points2[i];
+        var i2 = m - 1 - Math.round(i * m / n);
+        var point2 = points1[i2];
+        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+      }
+    }
+    
+    // newline.push(endpoints[1]);
+
+    var line = doc.pathItems.add();
+    line.stroked = true;
+    line.setEntirePath(newline); // not smooth path
+
+    // TRIED TO GENERATE A SMOOTH PATH HERE AND FAILED lol
+    // var pathPoints = [];
+    // for (i = 0; i < newline.length; i++) {
+    //   var pathPoint = line.pathPoints.add();
+    //   pathPoint.anchor = newline[i];
+    //   pathPoints.push(pathPoint);
+    // }
+
+    // line.pathPoints = pathPoints;
+
+    drawLine(newline, points1, step - 1);
+    drawLine(newline, points2, step - 1);
+
+  }
+}
+
+// finds the endpoints for each subdivision line 
+// on the original shape path
+function findSubdivEndpoints(mid, split, horizontal) {
+  for (var h = 0; h < paths.length; h++) {
+    p = paths[h].pathPoints;
+
+    var d1, d2, index1, index2;
+    d1 = Number.MAX_VALUE;
+    d2 = Number.MAX_VALUE;
+
+    alert(horizontal);
+    for (i = 0; i < p.length; i++) {
+
+      if (horizontal) {
+        if (p[i].anchor[0] < split) {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
+          }
+        } else {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d2) {
+            d2 = d;
+            index2 = i;
+          }
+        }
+      } else {
+        if (p[i].anchor[1] < split) {
+          var d = Math.abs(p[i].anchor[0] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
+          }
+        } else {
+          var d = Math.abs(p[i].anchor[0] - mid);
+          if (d < d2) {
+            d2 = d;
+            index2 = i;
+          }
+        }
+      }
+    }
+    alert(index1 + ", " + index2);
+    return [p[index1].anchor, p[index2].anchor];
+  }
 }
 
 // ----------------------------------------------
