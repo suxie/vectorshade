@@ -125,25 +125,105 @@ function interpolate() {
           index2 = i;
           d2 = d;
         }
-      } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 3
-        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
+      } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 3
+        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
         if (d < d3) {
           index3 = i;
           d3 = d;
         }
-      } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 4
-        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
+      } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 4
+        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
         if (d < d4) {
           index4 = i;
           d4 = d;
         }
+      } 
+    }
+
+    var h1, h2, v1, v2; // 4 sets of points: two horizontal edges, two vertical edges
+
+    if (index1 > index2 && index1 > index3 && index1 > index4) { // index1 is largest index
+      v2 = getEdgeNormal(index2, index3, p);
+      h2 = getEdgeNormal(index3, index4, p);
+
+      if (index4 > index2) { // final vertex is b/w 1 and 2
+        v1 = getEdgeNormal(index4, index1, p);
+        h1 = getEdgeSpecial(index1, index2, p);
+      } else {
+        h1 = getEdgeNormal(index1, index2, p);
+        v1 = getEdgeSpecial(index1, index4, p);
+      }
+
+    } else if (index2 > index1 && index2 > index3 && index2 > index4) { // index2 is largest index
+      h1 = getEdgeNormal(index3, index4, p);
+      v1 = getEdgeNormal(index4, index1, p);
+
+      if (index1 > index3) { // final vertex is b/w 2 and 3
+        h2 = getEdgeNormal(index1, index2, p);
+        v2 = getEdgeSpecial(index2, index3, p);
+      } else {
+        v2 = getEdgeNormal(index2, index3, p);
+        h2 = getEdgeSpecial(index1, index2, p);
+      }
+
+    } else if (index3 > index1 && index3 > index2 && index3 > index4) { // index3 is largest index
+      h1 = getEdgeNormal(index1, index2, p);
+      v1 = getEdgeNormal(index4, index1, p);
+
+      if (index2 > index4) { // final vertex is b/w 3 and 4
+        v2 = getEdgeNormal(index2, index3, p);
+        h2 = getEdgeSpecial(index4, index3, p);
+      } else {
+        h2 = getEdgeNormal(index3, index4, p);
+        v2 = getEdgeSpecial(index3, index2, p);
+      }
+
+    } else { // index4 is largest index
+      v2 = getEdgeNormal(index2, index3, p);
+      h1 = getEdgeNormal(index1, index2, p);
+
+      if (index3 > index1) { // final vertex is b/w 4 and 1
+        h2 = getEdgeNormal(index3, index4, p);
+        v1 = getEdgeSpecial(index4, index1, p);
+      } else {
+        v1 = getEdgeNormal(index1, index4, p);
+        h2 = getEdgeSpecial(index4, index3, p);
       }
     }
 
-    // alert("1: " + p[index1].anchor[0] + ", " + p[index1].anchor[1]);
-    // alert("2: " + p[index2].anchor[0] + ", " + p[index2].anchor[1]);
-    // alert("3: " + p[index3].anchor[0] + ", " + p[index3].anchor[1]);
-    // alert("4: " + p[index4].anchor[0] + ", " + p[index4].anchor[1]);
+    drawLine(h1, h2, 1);
+    drawLine(v1, v2, 1);
+    
+    // alert(h1.length + ", " + h2.length + ", " + v1.length + ", " + v2.length);
+
+    // alert(index1 + ": " + p[index1].anchor[0] + ", " + p[index1].anchor[1]);
+    // alert(index2 + ": " + p[index2].anchor[0] + ", " + p[index2].anchor[1]);
+    // alert(index3 + ": " + p[index3].anchor[0] + ", " + p[index3].anchor[1]);
+    // alert(index4 + ": " + p[index4].anchor[0] + ", " + p[index4].anchor[1]);
+
+    // find midpoints
+    // var mid1X, mid1Y, mid2X, mid2Y, mid3X, mid3Y, mid4X, mid4Y;
+    // mid1X = (p[index1].anchor[0] + p[index2].anchor[0]) / 2;
+    // mid1Y = (p[index1].anchor[1] + p[index2].anchor[1]) / 2;
+    // mid2X = (p[index2].anchor[0] + p[index3].anchor[0]) / 2;
+    // mid2Y = (p[index2].anchor[1] + p[index3].anchor[1]) / 2;
+    // mid3X = (p[index3].anchor[0] + p[index4].anchor[0]) / 2;
+    // mid3Y = (p[index3].anchor[1] + p[index4].anchor[1]) / 2;
+    // mid4X = (p[index4].anchor[0] + p[index1].anchor[0]) / 2;
+    // mid4Y = (p[index4].anchor[1] + p[index1].anchor[1]) / 2;
+
+    // var mid1, mid2, mid3, mid4;
+
+    // d1 = Number.MAX_VALUE;
+    // d2 = Number.MAX_VALUE;
+    // d3 = Number.MAX_VALUE;
+    // d4 = Number.MAX_VALUE;
+    
+    // for (i = 0; i < p.length; i++) {
+    //   var point = p[i].anchor;
+    //   var d = ((point[0] - mid1X) * (point[0] - mid1X)) + ((point[1] - mid1Y) * (point[1] - mid1Y));
+      
+    // }
 
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
@@ -151,6 +231,45 @@ function interpolate() {
     //create a new path with all the points
     //do this on the left/right side of the line again and again
   }  
+}
+
+// this is a helper function to get a list of point positions on an edge
+// between two vertices for a basic case
+function getEdgeNormal(v1, v2, p) {
+  var side = [];
+  start = Math.min(v1, v2);
+  end = Math.max(v1, v2);
+  for (i = start; i <= end; i++) {
+    side.push(p[i].anchor);
+  }
+  return side;
+}
+
+// this is a helper function to get a list of point positions on an edge
+// between two vertices for the special case where the edge contains 
+// the last index in the array, aka you have to loop back to the beginning of
+// the point array to get all the point values 
+function getEdgeSpecial(v1, v2, p) {
+  var side = [];
+  start = Math.max(v1, v2);
+  end = Math.min(v1, v2);
+  for (i = start; i < p.length; i++) {
+    side.push(p[i].anchor);
+  }
+  for (i = 0; i <= end; i++) {
+    side.push(p[i].anchor);
+  }
+  return side;
+}
+
+function drawLine(points1, points2, step) {
+  if (step == 0) {
+    return;
+  } // else {
+    // var newline = interpolate between two lines
+    // drawLine(newline, points1, step - 1)
+    // drawLine(newline, points2, step - 1)
+  // }
 }
 
 // ----------------------------------------------
