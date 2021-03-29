@@ -256,8 +256,7 @@ function getEdgeSpecial(v1, v2, p) {
 function drawLine(points1, points2, mid, split, horizontal, step) {
   var doc = app.activeDocument;
 
-  if (step == 0) {
-    alert()
+  if (step <= 0) {
     return;
   } else {
     var newline = [];
