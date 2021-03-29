@@ -260,8 +260,8 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
     return;
   } else {
     var newline = [];
-    // var endpoints = findSubdivEndpoints(mid, split, horizontal);
-    // newline.push(endpoints[0]);
+    var endpoints = findSubdivEndpoints(mid, split, horizontal);
+    newline.push(endpoints[0]);
     var m = points1.length;
     var n = points2.length;
     if (m > n) {
@@ -280,7 +280,7 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
       }
     }
     
-    // newline.push(endpoints[1]);
+    newline.push(endpoints[1]);
 
     var line = doc.pathItems.add();
     line.stroked = true;
@@ -296,8 +296,8 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
 
     // line.pathPoints = pathPoints;
 
-    drawLine(newline, points1, step - 1);
-    drawLine(newline, points2, step - 1);
+    drawLine(newline, points1, mid / 2, split, horizontal, step - 1);
+    drawLine(newline, points2, 3 * mid / 2, split, horizontal, step - 1);
 
   }
 }
@@ -318,15 +318,15 @@ function findSubdivEndpoints(mid, split, horizontal) {
       if (horizontal) {
         if (p[i].anchor[0] < split) {
           var d = Math.abs(p[i].anchor[1] - mid);
-          if (d < d1) {
-            d1 = d;
-            index1 = i;
-          }
-        } else {
-          var d = Math.abs(p[i].anchor[1] - mid);
           if (d < d2) {
             d2 = d;
             index2 = i;
+          }
+        } else {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
           }
         }
       } else {
