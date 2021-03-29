@@ -191,30 +191,6 @@ function interpolate() {
 
     drawLine(h1, h2, centerY, centerX, 1, 1);
     drawLine(v1, v2, centerX, centerY, 0, 1);
-    
-    // find midpoints
-    // var mid1X, mid1Y, mid2X, mid2Y, mid3X, mid3Y, mid4X, mid4Y;
-    // mid1X = (p[index1].anchor[0] + p[index2].anchor[0]) / 2;
-    // mid1Y = (p[index1].anchor[1] + p[index2].anchor[1]) / 2;
-    // mid2X = (p[index2].anchor[0] + p[index3].anchor[0]) / 2;
-    // mid2Y = (p[index2].anchor[1] + p[index3].anchor[1]) / 2;
-    // mid3X = (p[index3].anchor[0] + p[index4].anchor[0]) / 2;
-    // mid3Y = (p[index3].anchor[1] + p[index4].anchor[1]) / 2;
-    // mid4X = (p[index4].anchor[0] + p[index1].anchor[0]) / 2;
-    // mid4Y = (p[index4].anchor[1] + p[index1].anchor[1]) / 2;
-
-    // var mid1, mid2, mid3, mid4;
-
-    // d1 = Number.MAX_VALUE;
-    // d2 = Number.MAX_VALUE;
-    // d3 = Number.MAX_VALUE;
-    // d4 = Number.MAX_VALUE;
-    
-    // for (i = 0; i < p.length; i++) {
-    //   var point = p[i].anchor;
-    //   var d = ((point[0] - mid1X) * (point[0] - mid1X)) + ((point[1] - mid1Y) * (point[1] - mid1Y));
-      
-    // }
 
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
@@ -260,8 +236,8 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
     return;
   } else {
     var newline = [];
-    // var endpoints = findSubdivEndpoints(mid, split, horizontal);
-    // newline.push(endpoints[0]);
+    var endpoints = findSubdivEndpoints(mid, split, horizontal);
+    newline.push(endpoints[0]);
     var m = points1.length;
     var n = points2.length;
     if (m > n) {
@@ -280,7 +256,7 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
       }
     }
     
-    // newline.push(endpoints[1]);
+    newline.push(endpoints[1]);
 
     var line = doc.pathItems.add();
     line.stroked = true;
@@ -296,8 +272,9 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
 
     // line.pathPoints = pathPoints;
 
-    drawLine(newline, points1, step - 1);
-    drawLine(newline, points2, step - 1);
+    drawLine(newline, points1, mid / 2, split, horizontal, step - 1);
+    drawLine(newline, points2, 3 * mid / 2, split, horizontal, step - 1);
+    // ** should probably recalculate the midpoint here lol 
 
   }
 }
@@ -312,23 +289,24 @@ function findSubdivEndpoints(mid, split, horizontal) {
     d1 = Number.MAX_VALUE;
     d2 = Number.MAX_VALUE;
 
-    alert(horizontal);
-    for (i = 0; i < p.length; i++) {
+    // alert(horizontal);
 
+    for (i = 0; i < p.length; i++) {
       if (horizontal) {
         if (p[i].anchor[0] < split) {
-          var d = Math.abs(p[i].anchor[1] - mid);
-          if (d < d1) {
-            d1 = d;
-            index1 = i;
-          }
-        } else {
           var d = Math.abs(p[i].anchor[1] - mid);
           if (d < d2) {
             d2 = d;
             index2 = i;
           }
+        } else {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
+          }
         }
+
       } else {
         if (p[i].anchor[1] < split) {
           var d = Math.abs(p[i].anchor[0] - mid);
@@ -345,7 +323,7 @@ function findSubdivEndpoints(mid, split, horizontal) {
         }
       }
     }
-    alert(index1 + ", " + index2);
+    // alert(index1 + ", " + index2);
     return [p[index1].anchor, p[index2].anchor];
   }
 }
