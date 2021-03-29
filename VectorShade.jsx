@@ -7,7 +7,7 @@ var paths = [];
 getPathItemsInSelection(n, paths);
 
 div(); //first, divide the path into even segments
-//interpolate(); //second, interpolate
+interpolate(); //second, interpolate
 
 // Divide (length)
 // Copyright(c) 2006-2009 SATO Hiroyuki
@@ -69,10 +69,11 @@ function div() {
   }
   activeDocument.selection = paths;
 }
+
 function interpolate() {
   for (var h = 0; h < paths.length; h++) {
     //first, find bounding box vertices
-    var minX, minY, maxX, maxY, index1, index2, index3, index4;
+    var minX, minY, maxX, maxY;
     pnts = [];
     p = paths[h].pathPoints;
     var firstAnchor = p[0].anchor;
@@ -97,13 +98,53 @@ function interpolate() {
       }
     }
 
-    //TODO:
-    //then, find the four points that is closest to the vertices of the bounding box
+    alert("(" + minX + ", " + minY + ") " + "(" + maxX + ", " + maxY + ")");
+
+    var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
+    d1 = Number.MAX_VALUE;
+    d2 = Number.MAX_VALUE;
+    d3 = Number.MAX_VALUE;
+    d4 = Number.MAX_VALUE;
+
+    centerX = (minX + maxX) / 2;
+    centerY = (minY + maxY) / 2;
+
+    // find the four points that is closest to the vertices of the bounding box
     // formula is d=√((x_2-x_1)²+(y_2-y_1)²)
     for (i = 0; i < p.length; i++) {
       var point = p[i].anchor; //each point, first find its quadrant, then see if index1, 2, 3, 4 needs to be updated with the index of this point
-      
+      if (point[0] <= centerX && point[1] <= centerY) { // bottom left quad: 1
+        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY));
+        if (d < d1) {
+          index1 = i;
+          d1 = d;
+        }
+      } else if (point[0] >= centerX && point[1] <= centerY) { // bottom right quad: 2
+        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY));
+        if (d < d2) {
+          index2 = i;
+          d2 = d;
+        }
+      } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 3
+        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
+        if (d < d3) {
+          index3 = i;
+          d3 = d;
+        }
+      } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 4
+        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
+        if (d < d4) {
+          index4 = i;
+          d4 = d;
+        }
+      }
     }
+
+    // alert("1: " + p[index1].anchor[0] + ", " + p[index1].anchor[1]);
+    // alert("2: " + p[index2].anchor[0] + ", " + p[index2].anchor[1]);
+    // alert("3: " + p[index3].anchor[0] + ", " + p[index3].anchor[1]);
+    // alert("4: " + p[index4].anchor[0] + ", " + p[index4].anchor[1]);
+
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
     //the line to be divided is defined by index1 +- 1, index4 +- i), (index2 +- i, index3 +- i))
