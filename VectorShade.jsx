@@ -189,8 +189,21 @@ function interpolate() {
       }
     }
 
-    drawLine(h1, h2, centerY, centerX, 1, 1);
-    drawLine(v1, v2, centerX, centerY, 0, 1);
+    drawLine(h1, h2, centerY, centerX, 1, 3);
+    drawLine(v1, v2, centerX, centerY, 0, 3);
+
+    var doc = app.activeDocument;
+
+    path = paths[h];
+    var myColor = new CMYKColor();
+    myColor.cyan = 64;
+    myColor.magenta = 0;
+    myColor.yellow = 60;
+    myColor.black = 14;
+
+    doc.defaultFillColor = myColor;
+
+    path.filled = true;
 
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
@@ -272,10 +285,14 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
 
     // line.pathPoints = pathPoints;
 
-    drawLine(newline, points1, mid / 2, split, horizontal, step - 1);
-    drawLine(newline, points2, 3 * mid / 2, split, horizontal, step - 1);
-    // ** should probably recalculate the midpoint here lol 
+    newlineFlipped = [];
+    for (i = newline.length - 1; i >= 0; i--) {
+      newlineFlipped.push(newline[i]);
+    }
 
+    drawLine(points1, newline, mid / 2, split, horizontal, step - 1);
+    drawLine(newlineFlipped, points2, 3 * mid / 2, split, horizontal, step - 1);
+    // ** should probably recalculate the midpoint here lol 
   }
 }
 
