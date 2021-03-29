@@ -98,8 +98,6 @@ function interpolate() {
       }
     }
 
-    alert("(" + minX + ", " + minY + ") " + "(" + maxX + ", " + maxY + ")");
-
     var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
     d1 = Number.MAX_VALUE;
     d2 = Number.MAX_VALUE;
@@ -191,16 +189,9 @@ function interpolate() {
       }
     }
 
-    drawLine(h1, h2, 1);
-    drawLine(v1, v2, 1);
+    drawLine(h1, h2, centerY, centerX, 1, 1);
+    drawLine(v1, v2, centerX, centerY, 0, 1);
     
-    // alert(h1.length + ", " + h2.length + ", " + v1.length + ", " + v2.length);
-
-    // alert(index1 + ": " + p[index1].anchor[0] + ", " + p[index1].anchor[1]);
-    // alert(index2 + ": " + p[index2].anchor[0] + ", " + p[index2].anchor[1]);
-    // alert(index3 + ": " + p[index3].anchor[0] + ", " + p[index3].anchor[1]);
-    // alert(index4 + ": " + p[index4].anchor[0] + ", " + p[index4].anchor[1]);
-
     // find midpoints
     // var mid1X, mid1Y, mid2X, mid2Y, mid3X, mid3Y, mid4X, mid4Y;
     // mid1X = (p[index1].anchor[0] + p[index2].anchor[0]) / 2;
@@ -262,14 +253,102 @@ function getEdgeSpecial(v1, v2, p) {
   return side;
 }
 
-function drawLine(points1, points2, step) {
+function drawLine(points1, points2, mid, split, horizontal, step) {
+  var doc = app.activeDocument;
+
   if (step == 0) {
+    alert()
     return;
-  } // else {
-    // var newline = interpolate between two lines
-    // drawLine(newline, points1, step - 1)
-    // drawLine(newline, points2, step - 1)
-  // }
+  } else {
+    var newline = [];
+    // var endpoints = findSubdivEndpoints(mid, split, horizontal);
+    // newline.push(endpoints[0]);
+    var m = points1.length;
+    var n = points2.length;
+    if (m > n) {
+      for (i = 0; i < m; i++) {
+        var point1 = points1[i];
+        var i2 = n - 1 - Math.floor(i * n / m);
+        var point2 = points2[i2];
+        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+      }
+    } else {
+      for (i = 0; i < n; i++) {
+        var point1 = points2[i];
+        var i2 = m - 1 - Math.round(i * m / n);
+        var point2 = points1[i2];
+        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+      }
+    }
+    
+    // newline.push(endpoints[1]);
+
+    var line = doc.pathItems.add();
+    line.stroked = true;
+    line.setEntirePath(newline); // not smooth path
+
+    // TRIED TO GENERATE A SMOOTH PATH HERE AND FAILED lol
+    // var pathPoints = [];
+    // for (i = 0; i < newline.length; i++) {
+    //   var pathPoint = line.pathPoints.add();
+    //   pathPoint.anchor = newline[i];
+    //   pathPoints.push(pathPoint);
+    // }
+
+    // line.pathPoints = pathPoints;
+
+    drawLine(newline, points1, step - 1);
+    drawLine(newline, points2, step - 1);
+
+  }
+}
+
+// finds the endpoints for each subdivision line 
+// on the original shape path
+function findSubdivEndpoints(mid, split, horizontal) {
+  for (var h = 0; h < paths.length; h++) {
+    p = paths[h].pathPoints;
+
+    var d1, d2, index1, index2;
+    d1 = Number.MAX_VALUE;
+    d2 = Number.MAX_VALUE;
+
+    alert(horizontal);
+    for (i = 0; i < p.length; i++) {
+
+      if (horizontal) {
+        if (p[i].anchor[0] < split) {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
+          }
+        } else {
+          var d = Math.abs(p[i].anchor[1] - mid);
+          if (d < d2) {
+            d2 = d;
+            index2 = i;
+          }
+        }
+      } else {
+        if (p[i].anchor[1] < split) {
+          var d = Math.abs(p[i].anchor[0] - mid);
+          if (d < d1) {
+            d1 = d;
+            index1 = i;
+          }
+        } else {
+          var d = Math.abs(p[i].anchor[0] - mid);
+          if (d < d2) {
+            d2 = d;
+            index2 = i;
+          }
+        }
+      }
+    }
+    alert(index1 + ", " + index2);
+    return [p[index1].anchor, p[index2].anchor];
+  }
 }
 
 // ----------------------------------------------
