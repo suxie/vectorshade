@@ -6,70 +6,108 @@ var n = 2;
 var paths = [];
 getPathItemsInSelection(n, paths);
 
-div(); //first, divide the path into even segments
-interpolate(); //second, interpolate
+var window = createWindow();
 
-// Divide (length)
-// Copyright(c) 2006-2009 SATO Hiroyuki
-// http://park12.wakwak.com/~shp/lc/et/en_aics_script.html
+window.show();
+// div(); //first, divide the path into even segments
+// interpolate(); //second, interpolate
 
-function div() {
- 
-  if (paths.length < 1) return;
 
-  // Settings ====================
+// OUR FUNCTIONS: ====================================================
+function createWindow() {
+    var myWindow = new Window ("dialog", "Form");
+    // subdiv slider
+    var subdivGroup = myWindow.add ("group");
+    subdivGroup.add ("statictext", undefined, "Subdivisions:");
+    var subdivText = subdivGroup.add ("edittext", undefined, 3);
+    subdivText.characters = 2;
+    var subdivSlider = subdivGroup.add ("slider", undefined, 3, 0, 10);
+    subdivSlider.onChanging = function () {
+        subdivText.text = Math.floor(subdivSlider.value);
+    }
 
-  var n = 2; // default dividing number
-   // =============================
-  // not ver.10 : input a number with a prompt box
-  
-  var i, j, k, p, q;
-  var pnts, len, ar, redrawflg;
+    myWindow.add("statictext", undefined, "Color (RGB):");
+    
+    // rgb
+    var redGroup = myWindow.add("group");
+    redGroup.add ("statictext", undefined, "R:");
+    var redGroupText = redGroup.add ("edittext", undefined, 50);
+    redGroupText.characters = 3;
+    var redGroupSlider = redGroup.add ("slider", undefined, 50, 0, 255);
+    redGroupSlider.onChanging = function () {
+        redGroupText.text = Math.floor(redGroupSlider.value);
+    }
+    var greenGroup = myWindow.add("group");
+    greenGroup.add ("statictext", undefined, "G:");
+    var greenGroupText = greenGroup.add ("edittext", undefined, 50);
+    greenGroupText.characters = 3;
+    var greenGroupSlider = greenGroup.add ("slider", undefined, 50, 0, 255);
+    greenGroupSlider.onChanging = function () {
+        greenGroupText.text = Math.floor(greenGroupSlider.value);
+    }
+    var blueGroup = myWindow.add("group");
+    blueGroup.add ("statictext", undefined, "B:");
+    var blueGroupText = blueGroup.add ("edittext", undefined, 50);
+    blueGroupText.characters = 3;
+    var blueGroupSlider = blueGroup.add ("slider", undefined, 50, 0, 255);
+    blueGroupSlider.onChanging = function () {
+        blueGroupText.text = Math.floor(blueGroupSlider.value);
+    }
 
-  for (var h = 0; h < paths.length; h++) {
-      redrawflg = false;
-      pnts = [];
-      p = paths[h].pathPoints;
+    // light direction 
+    var lightGroup = myWindow.add("group");
+    lightGroup.add("statictext", undefined, "Light Direction:");
+    
+    var lightGroupInputs = lightGroup.add("group");
+    lightGroupInputs.orientation = "column";
+    var lightGroupX = lightGroupInputs.add("group");
+    var lightGroupXText = lightGroupX.add("edittext", undefined, 0.5);
+    lightGroupXText.characters = 5;
+    var lightGroupXSlider = lightGroupX.add("slider", undefined, 0.5, 0, 1);
+    lightGroupXSlider.onChanging = function() {
+        lightGroupXText.text = lightGroupXSlider.value.toFixed(3);
+    }
+    var lightGroupY = lightGroupInputs.add("group");
+    var lightGroupYText = lightGroupY.add("edittext", undefined, 0.5);
+    lightGroupYText.characters = 5;
+    var lightGroupYSlider = lightGroupY.add("slider", undefined, 0.5, 0, 1);
+    lightGroupYSlider.onChanging = function() {
+        lightGroupYText.text = lightGroupYSlider.value.toFixed(3);
+    }
+    var lightGroupZ = lightGroupInputs.add("group");
+    var lightGroupZText = lightGroupZ.add("edittext", undefined, 0.5);
+    lightGroupZText.characters = 5;
+    var lightGroupZSlider = lightGroupZ.add("slider", undefined, 0.5, 0, 1);
+    lightGroupZSlider.onChanging = function() {
+        lightGroupZText.text = lightGroupZSlider.value.toFixed(3);
+    }
 
-      for (i = 0; i < p.length; i++) {
-          j = parseIdx(p, i + 1);
-          if (j < 0) break;
-          if (!sideSelection(p[i], p[j])) continue;
-
-          ar = [i];
-          q = [p[i].anchor, p[i].rightDirection,
-               p[j].leftDirection, p[j].anchor];
-
-          len = getT4Len(q, 0); //length of entire segment
-
-          n = Math.abs(len / seg); //find how many division is needed
-
-          len = getT4Len(q, 0) / n; //find segment length of each division
-
-          if (len <= 0) continue;
-
-          redrawflg = true;
-
-          for (k = 1; k < n; k++) {
-              ar.push(getT4Len(q, len * k));
-          }
-          pnts.push(ar);
-      }
-      if (redrawflg) addPnts(paths[h], pnts, false);
-  }
-  activeDocument.selection = paths;
+    // buttons 
+    var myButtonGroup = myWindow.add ("group");
+    myButtonGroup.alignment = "right";
+    var okay = myButtonGroup.add ("button", undefined, "OK");
+    okay.onClick = function() {
+        n = parseInt(subdivText.text);
+        r = parseInt(redGroupText.text);
+        g = parseInt(greenGroupText.text);
+        b = parseInt(blueGroupText.text);
+        lightX = parseFloat(lightGroupXText.text);
+        lightY = parseFloat(lightGroupYText.text);
+        lightZ = parseFloat(lightGroupZText.text);
+        div();
+        interpolate(n, r, g, b, lightX, lightY, lightZ); // pass in arguments to interpolate
+        myWindow.hide();
+    }
+    myButtonGroup.add ("button", undefined, "Cancel");
+    return myWindow;
 }
 
-function interpolate() {
-    n = prompt("divide each selected segment into ... (based on its length)", n);
-    if (!n) {
-        return;
-    } else if (isNaN(n) || n < 2) {
-        alert("Please input a number greater than 1 with 1 byte characters.");
-        return;
-    }
-    n = parseInt(n);
-    
+// The bulk of the script is performed here. This function subdivides a shape and calls
+// the other functions which implement the shade tree. 
+// INPUTS: n = number of subdivisions
+//                  r, g, b = RGB color values
+//                  lightX, lightY, lightZ = vector indicating light direction
+function interpolate(n, r, g, b, lightX, lightY, lightZ) {
     for (var h = 0; h < paths.length; h++) {
     //first, find bounding box vertices
         var minX, minY, maxX, maxY;
@@ -184,19 +222,21 @@ function interpolate() {
             }
         }
     
-        drawLine(h1, h2, 1, 4);
-        drawLine(h1, h2, 0, 4);
-        drawLine(v1, v2, 1, 4);
-        drawLine(v1, v2, 0, 4);
+        drawLine(h1, h2, 1, n);
+        drawLine(h1, h2, 0, n);
+        drawLine(v1, v2, 1, n);
+        drawLine(v1, v2, 0, n);
 
         var doc = app.activeDocument;
 
         path = paths[h];
-        var myColor = new CMYKColor();
-        myColor.cyan = 64;
-        myColor.magenta = 0;
-        myColor.yellow = 60;
-        myColor.black = 14;
+        
+        // TODO: GRADIENT 
+        
+        var myColor = new RGBColor();
+        myColor.red = Number(r);
+        myColor.green = Number(g);
+        myColor.blue = Number(b);
 
         doc.defaultFillColor = myColor;
 
@@ -292,6 +332,59 @@ function drawLine(points1, points2, left, step) {
 // on the original shape path
 // THIS IS NO LONGER BEING USED. too many bugs and not needed
 function findSubdivEndpoints(mid, split, horizontal) {
+
+// CODE THAT WE GOT FROM ONLINE ===================================
+
+// Divide (length)
+// Copyright(c) 2006-2009 SATO Hiroyuki
+// http://park12.wakwak.com/~shp/lc/et/en_aics_script.html
+function div() {
+ 
+  if (paths.length < 1) return;
+
+  // Settings ====================
+
+  var n = 2; // default dividing number
+   // =============================
+  // not ver.10 : input a number with a prompt box
+  
+  var i, j, k, p, q;
+  var pnts, len, ar, redrawflg;
+
+  for (var h = 0; h < paths.length; h++) {
+      redrawflg = false;
+      pnts = [];
+      p = paths[h].pathPoints;
+
+      for (i = 0; i < p.length; i++) {
+          j = parseIdx(p, i + 1);
+          if (j < 0) break;
+          if (!sideSelection(p[i], p[j])) continue;
+
+          ar = [i];
+          q = [p[i].anchor, p[i].rightDirection,
+               p[j].leftDirection, p[j].anchor];
+
+          len = getT4Len(q, 0); //length of entire segment
+
+          n = Math.abs(len / seg); //find how many division is needed
+
+          len = getT4Len(q, 0) / n; //find segment length of each division
+
+          if (len <= 0) continue;
+
+          redrawflg = true;
+
+          for (k = 1; k < n; k++) {
+              ar.push(getT4Len(q, len * k));
+          }
+          pnts.push(ar);
+      }
+      if (redrawflg) addPnts(paths[h], pnts, false);
+  }
+  activeDocument.selection = paths;
+}
+
     for (var h = 0; h < paths.length; h++) {
         p = paths[h].pathPoints;
         
