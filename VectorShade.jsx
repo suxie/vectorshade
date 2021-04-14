@@ -22,17 +22,7 @@ function div() {
   var n = 2; // default dividing number
    // =============================
   // not ver.10 : input a number with a prompt box
-  if (!ver10) {
-      n = prompt("divide each selected segment into ... (based on its length)", n);
-      if (!n) {
-          return;
-      } else if (isNaN(n) || n < 2) {
-          alert("Please input a number greater than 1 with 1 byte characters.");
-          return;
-      }
-      n = parseInt(n);
-  }
-
+  
   var i, j, k, p, q;
   var pnts, len, ar, redrawflg;
 
@@ -71,158 +61,159 @@ function div() {
 }
 
 function interpolate() {
-  for (var h = 0; h < paths.length; h++) {
+    n = prompt("divide each selected segment into ... (based on its length)", n);
+    if (!n) {
+        return;
+    } else if (isNaN(n) || n < 2) {
+        alert("Please input a number greater than 1 with 1 byte characters.");
+        return;
+    }
+    n = parseInt(n);
+    
+    for (var h = 0; h < paths.length; h++) {
     //first, find bounding box vertices
-    var minX, minY, maxX, maxY;
-    pnts = [];
-    p = paths[h].pathPoints;
-    var firstAnchor = p[0].anchor;
-    minX = firstAnchor[0];
-    maxX = firstAnchor[0];
-    minY = firstAnchor[1];
-    maxY = firstAnchor[1];
-
-    for (i = 0; i < p.length; i++) {
-      var point = p[i].anchor;
-      if (point[0] < minX) {
-          minX = point[0];
-      }
-      if (point[0] > maxX) {
-          maxX = point[0];
-      }
-      if (point[1] < minY) {
-          minY = point[1];
-      }
-      if (point[1] > maxY) {
-          maxY = point[1];
-      }
-    }
-
-    var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
-    d1 = Number.MAX_VALUE;
-    d2 = Number.MAX_VALUE;
-    d3 = Number.MAX_VALUE;
-    d4 = Number.MAX_VALUE;
-
-    centerX = (minX + maxX) / 2;
-    centerY = (minY + maxY) / 2;
-
-    // find the four points that is closest to the vertices of the bounding box
-    // formula is d=√((x_2-x_1)²+(y_2-y_1)²)
-    for (i = 0; i < p.length; i++) {
-      var point = p[i].anchor; //each point, first find its quadrant, then see if index1, 2, 3, 4 needs to be updated with the index of this point
-      if (point[0] <= centerX && point[1] <= centerY) { // bottom left quad: 1
-        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY));
-        if (d < d1) {
-          index1 = i;
-          d1 = d;
+        var minX, minY, maxX, maxY;
+        pnts = [];
+        p = paths[h].pathPoints;
+        var firstAnchor = p[0].anchor;
+        minX = firstAnchor[0];
+        maxX = firstAnchor[0];
+        minY = firstAnchor[1];
+        maxY = firstAnchor[1];
+        
+        for (i = 0; i < p.length; i++) {
+            var point = p[i].anchor;
+            if (point[0] < minX) {
+                minX = point[0];
+            }
+            if (point[0] > maxX) {
+                maxX = point[0];
+            }
+            if (point[1] < minY) {
+                minY = point[1];
+            }
+            if (point[1] > maxY) {
+                maxY = point[1];
+            }
         }
-      } else if (point[0] >= centerX && point[1] <= centerY) { // bottom right quad: 2
-        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY));
-        if (d < d2) {
-          index2 = i;
-          d2 = d;
+    
+        var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
+        d1 = Number.MAX_VALUE;
+        d2 = Number.MAX_VALUE;
+        d3 = Number.MAX_VALUE;
+        d4 = Number.MAX_VALUE;
+        
+        centerX = (minX + maxX) / 2;
+        centerY = (minY + maxY) / 2;
+        
+        // find the four points that is closest to the vertices of the bounding box
+        // formula is d=√((x_2-x_1)²+(y_2-y_1)²)
+        for (i = 0; i < p.length; i++) {
+            var point = p[i].anchor; //each point, first find its quadrant, then see if index1, 2, 3, 4 needs to be updated with the index of this point
+            if (point[0] <= centerX && point[1] <= centerY) { // bottom left quad: 1
+                var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY));
+                if (d < d1) {
+                    index1 = i;
+                    d1 = d;
+                }
+            } else if (point[0] >= centerX && point[1] <= centerY) { // bottom right quad: 2
+                var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY));
+                if (d < d2) {
+                    index2 = i;
+                    d2 = d;
+                }
+            } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 3
+                var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
+                if (d < d3) {
+                    index3 = i;
+                    d3 = d;
+                }
+            } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 4
+                var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
+                if (d < d4) {
+                    index4 = i;
+                    d4 = d;
+                }
+            } 
         }
-      } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 3
-        var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
-        if (d < d3) {
-          index3 = i;
-          d3 = d;
+        var h1, h2, v1, v2; // 4 sets of points: two horizontal edges, two vertical edges
+        
+        if (index1 > index2 && index1 > index3 && index1 > index4) { // index1 is largest index
+            v2 = getEdgeNormal(index2, index3, p);
+            h2 = getEdgeNormal(index3, index4, p);
+            
+            if (index4 > index2) { // final vertex is b/w 1 and 2
+                v1 = getEdgeNormal(index4, index1, p);
+                h1 = getEdgeSpecial(index1, index2, p);
+            } else {
+                h1 = getEdgeNormal(index1, index2, p);
+                v1 = getEdgeSpecial(index1, index4, p);
+            }
+        } else if (index2 > index1 && index2 > index3 && index2 > index4) { // index2 is largest index
+            h1 = getEdgeNormal(index3, index4, p);
+            v1 = getEdgeNormal(index4, index1, p);
+            
+            if (index1 > index3) { // final vertex is b/w 2 and 3
+                h2 = getEdgeNormal(index1, index2, p);
+                v2 = getEdgeSpecial(index2, index3, p);
+            } else {
+                v2 = getEdgeNormal(index2, index3, p);
+                h2 = getEdgeSpecial(index1, index2, p);
+            }
+        } else if (index3 > index1 && index3 > index2 && index3 > index4) { // index3 is largest index
+            h1 = getEdgeNormal(index1, index2, p);
+            v1 = getEdgeNormal(index4, index1, p);
+            
+            if (index2 > index4) { // final vertex is b/w 3 and 4
+                v2 = getEdgeNormal(index2, index3, p);
+                h2 = getEdgeSpecial(index4, index3, p);
+            } else {
+                h2 = getEdgeNormal(index3, index4, p);
+                v2 = getEdgeSpecial(index3, index2, p);
+            }
+        } else { // index4 is largest index
+            v2 = getEdgeNormal(index2, index3, p);
+            h1 = getEdgeNormal(index1, index2, p);
+            
+            if (index3 > index1) { // final vertex is b/w 4 and 1
+                h2 = getEdgeNormal(index3, index4, p);
+                v1 = getEdgeSpecial(index4, index1, p);
+            } else {
+                v1 = getEdgeNormal(index1, index4, p);
+                h2 = getEdgeSpecial(index4, index3, p);
+            }
         }
-      } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 4
-        var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
-        if (d < d4) {
-          index4 = i;
-          d4 = d;
-        }
-      } 
-    }
+    
+        drawLine(h1, h2, 1, 4);
+        drawLine(h1, h2, 0, 4);
+        drawLine(v1, v2, 1, 4);
+        drawLine(v1, v2, 0, 4);
 
-    var h1, h2, v1, v2; // 4 sets of points: two horizontal edges, two vertical edges
+        var doc = app.activeDocument;
 
-    if (index1 > index2 && index1 > index3 && index1 > index4) { // index1 is largest index
-      v2 = getEdgeNormal(index2, index3, p);
-      h2 = getEdgeNormal(index3, index4, p);
+        path = paths[h];
+        var myColor = new CMYKColor();
+        myColor.cyan = 64;
+        myColor.magenta = 0;
+        myColor.yellow = 60;
+        myColor.black = 14;
 
-      if (index4 > index2) { // final vertex is b/w 1 and 2
-        v1 = getEdgeNormal(index4, index1, p);
-        h1 = getEdgeSpecial(index1, index2, p);
-      } else {
-        h1 = getEdgeNormal(index1, index2, p);
-        v1 = getEdgeSpecial(index1, index4, p);
-      }
+        doc.defaultFillColor = myColor;
 
-    } else if (index2 > index1 && index2 > index3 && index2 > index4) { // index2 is largest index
-      h1 = getEdgeNormal(index3, index4, p);
-      v1 = getEdgeNormal(index4, index1, p);
-
-      if (index1 > index3) { // final vertex is b/w 2 and 3
-        h2 = getEdgeNormal(index1, index2, p);
-        v2 = getEdgeSpecial(index2, index3, p);
-      } else {
-        v2 = getEdgeNormal(index2, index3, p);
-        h2 = getEdgeSpecial(index1, index2, p);
-      }
-
-    } else if (index3 > index1 && index3 > index2 && index3 > index4) { // index3 is largest index
-      h1 = getEdgeNormal(index1, index2, p);
-      v1 = getEdgeNormal(index4, index1, p);
-
-      if (index2 > index4) { // final vertex is b/w 3 and 4
-        v2 = getEdgeNormal(index2, index3, p);
-        h2 = getEdgeSpecial(index4, index3, p);
-      } else {
-        h2 = getEdgeNormal(index3, index4, p);
-        v2 = getEdgeSpecial(index3, index2, p);
-      }
-
-    } else { // index4 is largest index
-      v2 = getEdgeNormal(index2, index3, p);
-      h1 = getEdgeNormal(index1, index2, p);
-
-      if (index3 > index1) { // final vertex is b/w 4 and 1
-        h2 = getEdgeNormal(index3, index4, p);
-        v1 = getEdgeSpecial(index4, index1, p);
-      } else {
-        v1 = getEdgeNormal(index1, index4, p);
-        h2 = getEdgeSpecial(index4, index3, p);
-      }
-    }
-
-    drawLine(h1, h2, centerY, centerX, 1, 3);
-    drawLine(v1, v2, centerX, centerY, 0, 3);
-
-    var doc = app.activeDocument;
-
-    path = paths[h];
-    var myColor = new CMYKColor();
-    myColor.cyan = 64;
-    myColor.magenta = 0;
-    myColor.yellow = 60;
-    myColor.black = 14;
-
-    doc.defaultFillColor = myColor;
-
-    path.filled = true;
-
-    //TODO:
-    //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
-    //the line to be divided is defined by index1 +- 1, index4 +- i), (index2 +- i, index3 +- i))
-    //create a new path with all the points
-    //do this on the left/right side of the line again and again
-  }  
+        path.filled = true;
+    }  
 }
 
 // this is a helper function to get a list of point positions on an edge
 // between two vertices for a basic case
 function getEdgeNormal(v1, v2, p) {
-  var side = [];
-  start = Math.min(v1, v2);
-  end = Math.max(v1, v2);
-  for (i = start; i <= end; i++) {
-    side.push(p[i].anchor);
-  }
-  return side;
+    var side = [];
+    start = Math.min(v1, v2);
+    end = Math.max(v1, v2);
+    for (i = start; i <= end; i++) {
+        side.push(p[i].anchor);
+    }
+    return side;
 }
 
 // this is a helper function to get a list of point positions on an edge
@@ -230,119 +221,120 @@ function getEdgeNormal(v1, v2, p) {
 // the last index in the array, aka you have to loop back to the beginning of
 // the point array to get all the point values 
 function getEdgeSpecial(v1, v2, p) {
-  var side = [];
-  start = Math.max(v1, v2);
-  end = Math.min(v1, v2);
-  for (i = start; i < p.length; i++) {
-    side.push(p[i].anchor);
-  }
-  for (i = 0; i <= end; i++) {
-    side.push(p[i].anchor);
-  }
-  return side;
+    var side = [];
+    start = Math.max(v1, v2);
+    end = Math.min(v1, v2);
+    for (i = start; i < p.length; i++) {
+        side.push(p[i].anchor);
+    }
+    for (i = 0; i <= end; i++) {
+        side.push(p[i].anchor);
+    }
+    return side;
 }
 
-function drawLine(points1, points2, mid, split, horizontal, step) {
-  var doc = app.activeDocument;
-
-  if (step <= 0) {
-    return;
-  } else {
-    var newline = [];
-    var endpoints = findSubdivEndpoints(mid, split, horizontal);
-    newline.push(endpoints[0]);
-    var m = points1.length;
-    var n = points2.length;
-    if (m > n) {
-      for (i = 0; i < m; i++) {
-        var point1 = points1[i];
-        var i2 = n - 1 - Math.floor(i * n / m);
-        var point2 = points2[i2];
-        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
-      }
-    } else {
-      for (i = 0; i < n; i++) {
-        var point1 = points2[i];
-        var i2 = m - 1 - Math.round(i * m / n);
-        var point2 = points1[i2];
-        newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
-      }
-    }
+function drawLine(points1, points2, left, step) {
+    var doc = app.activeDocument;
     
-    newline.push(endpoints[1]);
+    if (step <= 0) {
+        return;
+    } else {
+        var newline = [];
+        //var endpoints = findSubdivEndpoints(mid, split, horizontal);
+        //newline.push(endpoints[0]);
+        var m = points1.length;
+        var n = points2.length;
+        if (m > n) {
+            for (i = 0; i < m; i++) {
+                var point1 = points1[i];
+                var i2 = n - 1 - Math.floor(i * n / m);
+                var point2 = points2[i2];
+                newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+            }
+        } else {
+            for (i = 0; i < n; i++) {
+                var point1 = points2[i];
+                var i2 = m - 1 - Math.round(i * m / n);
+                var point2 = points1[i2];
+                newline.push([(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]);
+            }
+        }
+    
+        //newline.push(endpoints[1]);
 
-    var line = doc.pathItems.add();
-    line.stroked = true;
-    line.setEntirePath(newline); // not smooth path
+        var line = doc.pathItems.add();
+        line.stroked = true;
+        line.setEntirePath(newline); // not smooth path
 
-    // TRIED TO GENERATE A SMOOTH PATH HERE AND FAILED lol
-    // var pathPoints = [];
-    // for (i = 0; i < newline.length; i++) {
-    //   var pathPoint = line.pathPoints.add();
-    //   pathPoint.anchor = newline[i];
-    //   pathPoints.push(pathPoint);
-    // }
+        // TRIED TO GENERATE A SMOOTH PATH HERE AND FAILED lol
+        // var pathPoints = [];
+        // for (i = 0; i < newline.length; i++) {
+        //   var pathPoint = line.pathPoints.add();
+        //   pathPoint.anchor = newline[i];
+        //   pathPoints.push(pathPoint);
+        // }
 
-    // line.pathPoints = pathPoints;
+        // line.pathPoints = pathPoints;
 
-    newlineFlipped = [];
-    for (i = newline.length - 1; i >= 0; i--) {
-      newlineFlipped.push(newline[i]);
+        if (left) {
+            drawLine(points1, newline,  left, step - 1);
+        } else {
+            newlineFlipped = [];
+            for (i = newline.length - 1; i >= 0; i--) {
+                newlineFlipped.push(newline[i]);
+            }
+            drawLine(newlineFlipped, points2,  left, step - 1);
+        }
     }
-
-    drawLine(points1, newline, mid / 2, split, horizontal, step - 1);
-    drawLine(newlineFlipped, points2, 3 * mid / 2, split, horizontal, step - 1);
-    // ** should probably recalculate the midpoint here lol 
-  }
 }
 
 // finds the endpoints for each subdivision line 
 // on the original shape path
+// THIS IS NO LONGER BEING USED. too many bugs and not needed
 function findSubdivEndpoints(mid, split, horizontal) {
-  for (var h = 0; h < paths.length; h++) {
-    p = paths[h].pathPoints;
+    for (var h = 0; h < paths.length; h++) {
+        p = paths[h].pathPoints;
+        
+        var d1, d2, index1, index2;
+        d1 = Number.MAX_VALUE;
+        d2 = Number.MAX_VALUE;
 
-    var d1, d2, index1, index2;
-    d1 = Number.MAX_VALUE;
-    d2 = Number.MAX_VALUE;
+        // alert(horizontal);
 
-    // alert(horizontal);
-
-    for (i = 0; i < p.length; i++) {
-      if (horizontal) {
-        if (p[i].anchor[0] < split) {
-          var d = Math.abs(p[i].anchor[1] - mid);
-          if (d < d2) {
-            d2 = d;
-            index2 = i;
-          }
-        } else {
-          var d = Math.abs(p[i].anchor[1] - mid);
-          if (d < d1) {
-            d1 = d;
-            index1 = i;
-          }
+        for (i = 0; i < p.length; i++) {
+            if (horizontal) {
+                if (p[i].anchor[0] < split) {
+                    var d = Math.abs(p[i].anchor[1] - mid);
+                    if (d < d2) {
+                        d2 = d;
+                        index2 = i;
+                    }
+                } else {
+                    var d = Math.abs(p[i].anchor[1] - mid);
+                    if (d < d1) {
+                        d1 = d;
+                        index1 = i;
+                    }
+                }
+            } else {
+                if (p[i].anchor[1] < split) {
+                    var d = Math.abs(p[i].anchor[0] - mid);
+                        if (d < d1) {
+                            d1 = d;
+                            index1 = i;
+                        }
+                } else {
+                    var d = Math.abs(p[i].anchor[0] - mid);
+                    if (d < d2) {
+                        d2 = d;
+                        index2 = i;
+                    }
+                }
+            }
         }
-
-      } else {
-        if (p[i].anchor[1] < split) {
-          var d = Math.abs(p[i].anchor[0] - mid);
-          if (d < d1) {
-            d1 = d;
-            index1 = i;
-          }
-        } else {
-          var d = Math.abs(p[i].anchor[0] - mid);
-          if (d < d2) {
-            d2 = d;
-            index2 = i;
-          }
-        }
-      }
+        // alert(index1 + ", " + index2);
+        return [p[index1].anchor, p[index2].anchor];
     }
-    // alert(index1 + ", " + index2);
-    return [p[index1].anchor, p[index2].anchor];
-  }
 }
 
 // ----------------------------------------------
