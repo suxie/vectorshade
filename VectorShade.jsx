@@ -82,6 +82,34 @@ function createWindow() {
         lightGroupZText.text = lightGroupZSlider.value.toFixed(3);
     }
 
+    // normal direction 
+    var normalGroup = myWindow.add("group");
+    normalGroup.add("statictext", undefined, "Normal Direction:");
+    
+    var normalGroupInputs = normalGroup.add("group");
+    normalGroupInputs.orientation = "column";
+    var normalGroupX = normalGroupInputs.add("group");
+    var normalGroupXText = normalGroupX.add("edittext", undefined, 0);
+    normalGroupXText.characters = 5;
+    var normalGroupXSlider = normalGroupX.add("slider", undefined, 0, 0, 1);
+    normalGroupXSlider.onChanging = function() {
+        normalGroupXText.text = normalGroupXSlider.value.toFixed(3);
+    }
+    var normalGroupY = normalGroupInputs.add("group");
+    var normalGroupYText = normalGroupY.add("edittext", undefined, 0);
+    normalGroupYText.characters = 5;
+    var normalGroupYSlider = normalGroupY.add("slider", undefined, 0, 0, 1);
+    normalGroupYSlider.onChanging = function() {
+        normalGroupYText.text = normalGroupYSlider.value.toFixed(3);
+    }
+    var normalGroupZ = normalGroupInputs.add("group");
+    var normalGroupZText = normalGroupZ.add("edittext", undefined, 1);
+    normalGroupZText.characters = 5;
+    var normalGroupZSlider = normalGroupZ.add("slider", undefined, 1, 0, 1);
+    normalGroupZSlider.onChanging = function() {
+        normalGroupZText.text = normalGroupZSlider.value.toFixed(3);
+    }
+
     // buttons 
     var myButtonGroup = myWindow.add ("group");
     myButtonGroup.alignment = "right";
@@ -109,7 +137,7 @@ function createWindow() {
 //                  lightX, lightY, lightZ = vector indicating light direction
 function interpolate(n, r, g, b, lightX, lightY, lightZ) {
     for (var h = 0; h < paths.length; h++) {
-    //first, find bounding box vertices
+        //first, find bounding box vertices
         var minX, minY, maxX, maxY;
         pnts = [];
         p = paths[h].pathPoints;
@@ -149,25 +177,25 @@ function interpolate(n, r, g, b, lightX, lightY, lightZ) {
         for (i = 0; i < p.length; i++) {
             var point = p[i].anchor; //each point, first find its quadrant, then see if index1, 2, 3, 4 needs to be updated with the index of this point
             if (point[0] <= centerX && point[1] <= centerY) { // bottom left quad: 1
-                var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY));
+                var d = Math.sqrt(((point[0] - minX) * (point[0] - minX)) + ((point[1] - minY) * (point[1] - minY)));
                 if (d < d1) {
                     index1 = i;
                     d1 = d;
                 }
             } else if (point[0] >= centerX && point[1] <= centerY) { // bottom right quad: 2
-                var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY));
+                var d = Math.sqrt(((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - minY) * (point[1] - minY)));
                 if (d < d2) {
                     index2 = i;
                     d2 = d;
                 }
             } else if (point[0] >= centerX && point[1] >= centerY) { // top right quad: 3
-                var d = ((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY));
+                var d = Math.sqrt(((point[0] - maxX) * (point[0] - maxX)) + ((point[1] - maxY) * (point[1] - maxY)));
                 if (d < d3) {
                     index3 = i;
                     d3 = d;
                 }
             } else if (point[0] <= centerX && point[1] >= centerY) { // top left quad: 4
-                var d = ((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY));
+                var d = Math.sqrt(((point[0] - minX) * (point[0] - minX)) + ((point[1] - maxY) * (point[1] - maxY)));
                 if (d < d4) {
                     index4 = i;
                     d4 = d;
@@ -222,6 +250,18 @@ function interpolate(n, r, g, b, lightX, lightY, lightZ) {
             }
         }
     
+        // CALCULATE NORMALS
+        // 1. Calculate vector between the two points to the left and right of the current point
+        // 2. Find perpendicular vector: for [x, y], this is [-y, x] or [y, -x]
+        // 3. Make sure this vector is pointing away from shape instead of towards center -- 
+        //          Test  whether [px, py] + [-y, x] or [px, py] + [y, -x] is farther from center 
+        var normals = []
+        normals.push([[centerX, centerY], [0, 0, 1]]);
+        calculateNormals(h1, centerX, centerY, normals);
+        calculateNormals(h2, centerX, centerY, normals);
+        calculateNormals(v1, centerX, centerY, normals);
+        calculateNormals(v2, centerX, centerY, normals);
+    
         drawLine(h1, h2, 1, n);
         drawLine(h1, h2, 0, n);
         drawLine(v1, v2, 1, n);
@@ -241,7 +281,7 @@ function interpolate(n, r, g, b, lightX, lightY, lightZ) {
         doc.defaultFillColor = myColor;
 
         path.filled = true;
-    }  
+    }
 }
 
 // this is a helper function to get a list of point positions on an edge
@@ -273,6 +313,67 @@ function getEdgeSpecial(v1, v2, p) {
     return side;
 }
 
+// this is a helper function to calculate normals along most of the edge points and
+// sets the normal of the center point to whatever the user specifies
+function calculateNormals(points, centerX, centerY, normals) {
+    for (i = 1; i < points.length - 1; i++) {
+        var line = app.activeDocument.pathItems.add();
+        line.stroked = true;
+        
+        var px = points[i][0];
+        var py = points[i][1];
+        var x = points[i + 1][0] - points[i - 1][0];
+        var y = points[i + 1][1] - points[i - 1][1];
+        
+        x /= Math.sqrt(x * x + y * y + 1 * 1); // normalize
+        y /= Math.sqrt(x * x + y * y + 1 * 1);
+        var xNegDist = Math.sqrt(((px + y - centerX) * (px + y - centerX)) + 
+                                              ((py - x - centerY) * (py - x - centerY)));
+        var yNegDist = Math.sqrt(((px - y - centerX) * (px - y - centerX)) + 
+                                               ((py + x - centerY) * (py + x - centerY)));
+        if (xNegDist > yNegDist) {
+            normals.push([[px, py], [y, -x, 1]]);
+            // UNCOMMENT THIS TO VISUALIZE NORMALS
+            // line.setEntirePath([[px,py], [(px + 20 * y), (py - 20 * x)]]);  
+        } else {
+            normals.push([[px, py], [-y, x, 1]]);
+            // UNCOMMENT THIS TO VISUALIZE NORMALS
+            // line.setEntirePath([[px,py], [(px - 20 * y), (py + 20 * x)]]); 
+        }
+    }
+}
+
+// THIS IS UNTESTED 
+// helper function for interpolating the normal at any point on the shape, 
+// given the point and the list of known normals 
+function interpolateNormal(normals, point) {
+    // calculate weight of each normal
+    var weights = [];
+    var sum = 0;
+    for (var i = 0; i < normals.length; i++) {
+        var weight = Math.sqrt(((point[0] - normals[i][0][0]) * (point[0] - normals[i][0][0])) +
+                                      ((point[1] - normals[i][0][1]) * (point[0] - normals[i][0][1])));
+        weights.push(weight);
+        sum += weight;
+    }
+    
+    // compute normal based on normalized weights
+    var normal = [0, 0, 0];
+    for (var i = 0; i < normals.length; i++) {
+        var weight = weight[i] / sum;
+        normal[0] += weight * normals[i][1][0];
+        normal[1] += weight * normals[i][1][1];
+        normal[2] += weight * normals[i][1][2];
+    }
+    // normalize
+    magnitude = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    normal[0] /= magnitude;
+    normal[1] /= magnitude;
+    normal[2] /= magnitude;
+    
+    return normal;
+}
+
 function drawLine(points1, points2, left, step) {
     var doc = app.activeDocument;
     
@@ -302,6 +403,7 @@ function drawLine(points1, points2, left, step) {
     
         //newline.push(endpoints[1]);
 
+        // COMMENT THIS OUT TO HIDE GRADIENT LINES:
         var line = doc.pathItems.add();
         line.stroked = true;
         line.setEntirePath(newline); // not smooth path
@@ -332,7 +434,50 @@ function drawLine(points1, points2, left, step) {
 // on the original shape path
 // THIS IS NO LONGER BEING USED. too many bugs and not needed
 function findSubdivEndpoints(mid, split, horizontal) {
+for (var h = 0; h < paths.length; h++) {
+        p = paths[h].pathPoints;
+        
+        var d1, d2, index1, index2;
+        d1 = Number.MAX_VALUE;
+        d2 = Number.MAX_VALUE;
 
+        // alert(horizontal);
+
+        for (i = 0; i < p.length; i++) {
+            if (horizontal) {
+                if (p[i].anchor[0] < split) {
+                    var d = Math.abs(p[i].anchor[1] - mid);
+                    if (d < d2) {
+                        d2 = d;
+                        index2 = i;
+                    }
+                } else {
+                    var d = Math.abs(p[i].anchor[1] - mid);
+                    if (d < d1) {
+                        d1 = d;
+                        index1 = i;
+                    }
+                }
+            } else {
+                if (p[i].anchor[1] < split) {
+                    var d = Math.abs(p[i].anchor[0] - mid);
+                        if (d < d1) {
+                            d1 = d;
+                            index1 = i;
+                        }
+                } else {
+                    var d = Math.abs(p[i].anchor[0] - mid);
+                    if (d < d2) {
+                        d2 = d;
+                        index2 = i;
+                    }
+                }
+            }
+        }
+        // alert(index1 + ", " + index2);
+        return [p[index1].anchor, p[index2].anchor];
+    }
+}
 // CODE THAT WE GOT FROM ONLINE ===================================
 
 // Divide (length)
@@ -383,51 +528,6 @@ function div() {
       if (redrawflg) addPnts(paths[h], pnts, false);
   }
   activeDocument.selection = paths;
-}
-
-    for (var h = 0; h < paths.length; h++) {
-        p = paths[h].pathPoints;
-        
-        var d1, d2, index1, index2;
-        d1 = Number.MAX_VALUE;
-        d2 = Number.MAX_VALUE;
-
-        // alert(horizontal);
-
-        for (i = 0; i < p.length; i++) {
-            if (horizontal) {
-                if (p[i].anchor[0] < split) {
-                    var d = Math.abs(p[i].anchor[1] - mid);
-                    if (d < d2) {
-                        d2 = d;
-                        index2 = i;
-                    }
-                } else {
-                    var d = Math.abs(p[i].anchor[1] - mid);
-                    if (d < d1) {
-                        d1 = d;
-                        index1 = i;
-                    }
-                }
-            } else {
-                if (p[i].anchor[1] < split) {
-                    var d = Math.abs(p[i].anchor[0] - mid);
-                        if (d < d1) {
-                            d1 = d;
-                            index1 = i;
-                        }
-                } else {
-                    var d = Math.abs(p[i].anchor[0] - mid);
-                    if (d < d2) {
-                        d2 = d;
-                        index2 = i;
-                    }
-                }
-            }
-        }
-        // alert(index1 + ", " + index2);
-        return [p[index1].anchor, p[index2].anchor];
-    }
 }
 
 // ----------------------------------------------
