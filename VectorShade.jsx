@@ -189,8 +189,10 @@ function interpolate() {
       }
     }
 
-    drawLine(h1, h2, centerY, centerX, 1, 1);
-    drawLine(v1, v2, centerX, centerY, 0, 1);
+    var hpoints = drawLine(h1, h2, centerY, centerX, 1, 1);
+    newPath(hpoints);
+    //drawLine(h1, h2, centerY, centerX, 1, 1);
+    //drawLine(v1, v2, centerX, centerY, 0, 1);
 
     //TODO:
     //then, define line interpolation using the division algorithm in the division() method. Divide the line in half.
@@ -198,6 +200,28 @@ function interpolate() {
     //create a new path with all the points
     //do this on the left/right side of the line again and again
   }  
+}
+
+function newPath(linepoints) {
+  var myDoc = app.activeDocument;
+  var myLine = myDoc.pathItems.add();
+  myLine.stroked = true;
+  var num = linepoints.length;
+  for (var i = 0; i < num; i++) {
+      var newPoint = myLine.pathPoints.add();
+      newPoint.anchor = linepoints[i];
+      if (i == 0) {
+          newPoint.leftDirection = newPoint.anchor;
+          newPoint.rightDirection = linepoints[i+1];
+      } else if(i == num  - 1) {
+          newPoint.leftDirection = linepoints[i - 1];
+          newPoint.rightDirection = newPoint.anchor;
+      } else {
+          newPoint.leftDirection = linepoints[i - 1];
+          newPoint.rightDirection = linepoints[i + 1];
+      }
+      newPoint.pointType = PointType.CORNER;
+  }
 }
 
 // this is a helper function to get a list of point positions on an edge
@@ -233,7 +257,7 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
   var doc = app.activeDocument;
 
   if (step <= 0) {
-    return;
+      return points1;
   } else {
     var newline = [];
     var endpoints = findSubdivEndpoints(mid, split, horizontal);
@@ -272,8 +296,8 @@ function drawLine(points1, points2, mid, split, horizontal, step) {
 
     // line.pathPoints = pathPoints;
 
-    drawLine(newline, points1, mid / 2, split, horizontal, step - 1);
-    drawLine(newline, points2, 3 * mid / 2, split, horizontal, step - 1);
+    return drawLine(newline, points1, mid / 2, split, horizontal, step - 1);
+    //drawLine(newline, points2, 3 * mid / 2, split, horizontal, step - 1);
     // ** should probably recalculate the midpoint here lol 
 
   }
