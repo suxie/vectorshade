@@ -334,16 +334,16 @@ function calculateNormals(points, centerX, centerY, normals) {
         if (xNegDist > yNegDist) {
             normals.push([[px, py], [y, -x, 1]]);
             // UNCOMMENT THIS TO VISUALIZE NORMALS
-            // line.setEntirePath([[px,py], [(px + 20 * y), (py - 20 * x)]]);  
+            line.setEntirePath([[px,py], [(px + 20 * y), (py - 20 * x)]]);  
         } else {
             normals.push([[px, py], [-y, x, 1]]);
             // UNCOMMENT THIS TO VISUALIZE NORMALS
-            // line.setEntirePath([[px,py], [(px - 20 * y), (py + 20 * x)]]); 
+            line.setEntirePath([[px,py], [(px - 20 * y), (py + 20 * x)]]); 
         }
     }
 }
 
-// THIS IS UNTESTED 
+
 // helper function for interpolating the normal at any point on the shape, 
 // given the point and the list of known normals 
 function interpolateNormal(normals, point) {
