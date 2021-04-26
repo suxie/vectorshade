@@ -159,27 +159,24 @@ function getColor(px, py, pz, r, g, b, n, x, y, z) {
     //n is the normal of format [x, y, z]
     //this method is called in baseColor(), which is called by logic()
     //logic is called when the UI is all set in createWindow()
-    var lightDirX = x - px;
-    var lightDirY = y - py;
-    var lightDirZ = z - pz;
-    var normalizeLight = Math.sqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
-    lightDirX /= normalizeLight;
-    lightDirY /= normalizeLight;
-    lightDirZ /= normalizeLight;
-    var normalize = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-    var lambertian = n[0] * lightDirX / normalize + n[1] * lightDirY / normalize + n[2] * lightDirZ / normalize;
-    // lambertian = n[0] * x + n[1] * y + n[2] * z;
-    // lambertian = Math.abs(lambertian);
+    
+    var lambertian = n[0] * x + n[1] * y + n[2] * z;
     var startColor = new RGBColor();
+    
+    // remap colors to range (0, 1)
     red = r / 255 * lambertian;
     green = g / 255 * lambertian;
     blue = b / 255 * lambertian;
+    
+    // ensure colors are within range (0, 255)
     red = Math.max(0, red * 255);
     green = Math.max(0,  green * 255);
     blue = Math.max(0, blue * 255);
-    //red = Math.min(red * 255, 255);
-    // green = Math.min(green * 255, 255);
-    //blue = Math.min(blue * 255, 255);
+    red = Math.min(red, 255);
+    green = Math.min(green, 255);
+    blue = Math.min(blue, 255);
+    
+    // return color
     startColor.red = red;
     startColor.green = green;
     startColor.blue = blue;
