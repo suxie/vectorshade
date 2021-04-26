@@ -71,21 +71,21 @@ function createWindow() {
     var lightGroupX = lightGroupInputs.add("group");
     var lightGroupXText = lightGroupX.add("edittext", undefined, 0);
     lightGroupXText.characters = 5;
-    var lightGroupXSlider = lightGroupX.add("slider", undefined, 0, 0, 1);
+    var lightGroupXSlider = lightGroupX.add("slider", undefined, 0, -1, 1);
     lightGroupXSlider.onChanging = function () {
         lightGroupXText.text = lightGroupXSlider.value.toFixed(3);
     }
     var lightGroupY = lightGroupInputs.add("group");
     var lightGroupYText = lightGroupY.add("edittext", undefined, 0);
     lightGroupYText.characters = 5;
-    var lightGroupYSlider = lightGroupY.add("slider", undefined, 0, 0, 1);
+    var lightGroupYSlider = lightGroupY.add("slider", undefined, 0, -1, 1);
     lightGroupYSlider.onChanging = function () {
         lightGroupYText.text = lightGroupYSlider.value.toFixed(3);
     }
     var lightGroupZ = lightGroupInputs.add("group");
     var lightGroupZText = lightGroupZ.add("edittext", undefined, 1);
     lightGroupZText.characters = 5;
-    var lightGroupZSlider = lightGroupZ.add("slider", undefined, 1, 0, 1);
+    var lightGroupZSlider = lightGroupZ.add("slider", undefined, 1, -1, 1);
     lightGroupZSlider.onChanging = function () {
         lightGroupZText.text = lightGroupZSlider.value.toFixed(3);
     }
@@ -155,11 +155,21 @@ function createColor(step, r, g, b) {
 }
 
 // lambertian reflectance model: surface color * dot product(surface normal, light direction)
-function getColor(r, g, b, n, x, y, z) {
+function getColor(px, py, pz, r, g, b, n, x, y, z) {
     //n is the normal of format [x, y, z]
     //this method is called in baseColor(), which is called by logic()
     //logic is called when the UI is all set in createWindow()
-    var lambertian = n[0] * x + n[1] * y + n[2] * z;
+    var lightDirX = x - px;
+    var lightDirY = y - py;
+    var lightDirZ = z - pz;
+    var normalizeLight = Math.sqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
+    lightDirX /= normalizeLight;
+    lightDirY /= normalizeLight;
+    lightDirZ /= normalizeLight;
+    var normalize = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+    var lambertian = n[0] * lightDirX / normalize + n[1] * lightDirY / normalize + n[2] * lightDirZ / normalize;
+    // lambertian = n[0] * x + n[1] * y + n[2] * z;
+    // lambertian = Math.abs(lambertian);
     var startColor = new RGBColor();
     red = r / 255 * lambertian;
     green = g / 255 * lambertian;
@@ -167,6 +177,9 @@ function getColor(r, g, b, n, x, y, z) {
     red = Math.max(0, red * 255);
     green = Math.max(0,  green * 255);
     blue = Math.max(0, blue * 255);
+    //red = Math.min(red * 255, 255);
+    // green = Math.min(green * 255, 255);
+    //blue = Math.min(blue * 255, 255);
     startColor.red = red;
     startColor.green = green;
     startColor.blue = blue;
@@ -374,7 +387,9 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
         layers = [];
         layer_normals = [];
         findMid(p, index1, index2, index3, index4, centerX, centerY, normals, layers, layer_normals);
-        drawBaseColor(layers, layer_normals, mode, r, g, b, x, y, z);
+        var px = 2 * point[0] / (maxX - minX) + minX - 1;
+        var py = 2 * point[1] / (maxY - minY) + minY - 1; 
+        drawBaseColor(layers, layer_normals, mode, px, py, 0, r, g, b, x, y, z);
     }
 }
 
@@ -500,7 +515,7 @@ function findMid(p, a, b, c, d, cx, cy, n, layers, normals) {
 }
 
 //draw base color
-function drawBaseColor(layers, normals, mode, r, g, b, x, y, z) {
+function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
     layer1 = layers[0];
     layer2 = layers[1];
     layer3 = layers[2];
@@ -521,7 +536,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, x, y, z) {
             ids.push(layer1[i + 1][j]);
 
             n = normal1[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
-            color = getColor(r, g, b, n, x, y, z);
+            color = getColor(px, py, pz, r, g, b, n, x, y, z);
             newRect(ids, color);
 
             //normal visualization
@@ -538,7 +553,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, x, y, z) {
             ids.push(layer2[i + 1][j + 1]);
             ids.push(layer2[i + 1][j]);
             n = normal2[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
-            color = getColor(r, g, b, n, x, y, z);
+            color = getColor(px, py, pz, r, g, b, n, x, y, z);
             newRect(ids, color);
 
 
@@ -557,7 +572,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, x, y, z) {
             ids.push(layer3[i + 1][j + 1]);
             ids.push(layer3[i + 1][j]);
             n = normal3[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
-            color = getColor(r, g, b, n, x, y, z);
+            color = getColor(px, py, pz, r, g, b, n, x, y, z);
             newRect(ids, color);
 
 
@@ -576,7 +591,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, x, y, z) {
             ids.push(layer4[i + 1][j + 1]);
             ids.push(layer4[i + 1][j]);
             n = normal4[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
-            color = getColor(r, g, b, n, x, y, z);
+            color = getColor(px, py, pz, r, g, b, n, x, y, z);
             newRect(ids, color);
 
 
