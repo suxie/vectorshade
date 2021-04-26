@@ -1,0 +1,4 @@
+# build outputs
+cpp/build/Debug/*
+cpp/build/*.user
+cpp/build/Release/*
