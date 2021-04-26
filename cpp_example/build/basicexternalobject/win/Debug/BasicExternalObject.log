@@ -1,0 +1,5 @@
+﻿cl : Command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  BasicExternalObject.cpp
+BasicExternalObject.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+     Creating library C:\Users\Susan\Downloads\Bridge_2021_SDK\Bridge_2021_SDK\sdksamples\cpp\build\basicexternalobject\win\Debug\BasicExternalObject.lib and object C:\Users\Susan\Downloads\Bridge_2021_SDK\Bridge_2021_SDK\sdksamples\cpp\build\basicexternalobject\win\Debug\BasicExternalObject.exp
+  BasicExternalObject.vcxproj -> C:\Users\Susan\Downloads\Bridge_2021_SDK\Bridge_2021_SDK\sdksamples\cpp\build\basicexternalobject\win\Debug\BasicExternalObject.dll
