@@ -11,18 +11,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\BasicExternalObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\source\include\SoCClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\source\include\SoSharedLibDefs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\source\ShadeTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\BasicExternalObject.cpp">
+    <ClCompile Include="..\source\ShadeTree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -23,6 +23,7 @@
     <RootNamespace>MyExtObj</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectName>ShadeTree</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -160,10 +161,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\BasicExternalObject.cpp" />
+    <ClCompile Include="..\source\ShadeTree.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\BasicExternalObject.h" />
+    <ClInclude Include="..\source\ShadeTree.h" />
     <ClInclude Include="..\source\include\SoCClient.h" />
     <ClInclude Include="..\source\include\SoSharedLibDefs.h" />
   </ItemGroup>
