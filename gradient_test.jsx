@@ -105,9 +105,9 @@ LoadBasicExternalObject.prototype.run = function()
 	
 	var libPath = this.getLibPath();
     alert(libPath);
-	var basiceo = new ExternalObject("lib:" + libPath);
+	var shadeTree = new ExternalObject("lib:" + libPath);
     
-    alert(basiceo.getAverage(10, 20, 55));
+    alert(shadeTree.getAverage(10, 20, 55));
 
 	// Create the menu element
 	// var newMenu = MenuElement.create( "menu", "SDK External Object", "after Help", "myBEOMenu" );

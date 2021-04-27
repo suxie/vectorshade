@@ -2,3 +2,4 @@
 cpp/build/Debug/*
 cpp/build/*.user
 cpp/build/Release/*
+cpp/build/.vs/*

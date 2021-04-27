@@ -45,6 +45,7 @@
 #include "ShadeTree.h"
 #include "SoSharedLibDefs.h"
 #include <string>
+#include "illustrator/AIGradient.h"
 
 #if defined (_WINDOWS)
 	#pragma warning(disable : 4996) // Turn off warning about deprecated strcpy on Win
@@ -70,6 +71,24 @@ static char* getNewBuffer(string& s)
 	strncpy(buff, s.c_str(), 1+s.length());
 
 	return buff;
+}
+
+extern "C" SHADETREE_API long makeGradient(TaggedData* argv, long argc, TaggedData * retval) {
+
+  // accept no arguments
+  if (argc != 0)
+  {
+    return kESErrBadArgumentList;
+  }
+
+  // The returned value type
+  retval->type = kTypeScript;
+
+  string s("[1, 2, 3]");
+
+  retval->data.string = getNewBuffer(s);
+
+  return kESErrOK;
 }
 
 /**

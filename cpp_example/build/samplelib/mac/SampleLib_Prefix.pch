@@ -1,5 +1,0 @@
-//
-// Prefix header for all source files of the 'SampleLib' target in the 'SampleLib' project.
-//
-
-#include <Carbon/Carbon.h>
