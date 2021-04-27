@@ -10,8 +10,8 @@
 **************************************************************************/
 
 /**
- * \file BasicExternalObject.h
- * \brief Header file for the BasicExternalObject. 
+ * \file ShadeTree.h
+ * \brief Header file for the ShadeTree. 
  */
 
 #if defined BASICEXTERNALOBJECT_EXPORTS

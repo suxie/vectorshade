@@ -64,3 +64,98 @@ function newRect(linepoints, color) {
         newPoint.pointType = PointType.CORNER;
     }
 }
+
+function LoadBasicExternalObject() 
+{
+	/**
+	 The context in which this snippet can run.
+	*/
+	this.requiredContext = "\tNeed to be running in context of Bridge and the external library needs to be available\n";	
+}
+
+LoadBasicExternalObject.prototype.getLibPath = function()
+{
+
+	var isWin = (File.fs == "Windows");
+	var libFilename = (isWin) ? "ShadeTree.dll" : "ShadeTree.framework";
+	Folder.current = File ($.fileName).parent.parent;
+	
+	var libPath;
+
+	if(isWin)
+	{
+		// release
+		libPath = Folder.current.fsName + "\\vectorshade\\cpp\\build\\x64\\Release\\" + libFilename;
+		// Debug
+		//libPath = Folder.current.fsName + "\\build\\basicexternalobject\\win\x64\\Debug\\" + libFilename;
+	}
+	else //  running on mac
+	{
+		// release
+	    libPath = Folder.current.fsName + "/build/basicexternalobject/mac/Release/" + libFilename;
+		// Debug
+		//libPath = Folder.current.fsName + "/build/basicexternalobject/mac/Debug/" + libFilename;
+	}
+
+	return libPath;
+}
+
+LoadBasicExternalObject.prototype.run = function()
+{
+	
+	var libPath = this.getLibPath();
+    alert(libPath);
+	var basiceo = new ExternalObject("lib:" + libPath);
+    
+    alert(basiceo.getAverage(10, 20, 55));
+
+	// Create the menu element
+	// var newMenu = MenuElement.create( "menu", "SDK External Object", "after Help", "myBEOMenu" );
+
+	// Create the menu item
+	// var eoCommand = MenuElement.create( "command", "Exercise Basic External Object", "at the end of myBEOMenu");
+
+	// handler for menu item - Run External Object
+	// eoCommand.onSelect = function () 
+	// { 
+		// The compute an average
+		// $.writeln("LoadBasicExternalObject: Average: " + basiceo.getAverage(10, 20, 55)); // must pass in numbers
+		
+		// Append something onto our string
+		// $.writeln("LoadBasicExternalObject: " + basiceo.appendString("My String"));
+
+		// Get a script from the external object.  This will create a menu element.
+		// basiceo.myScript();
+
+		// Get an array
+		// var arr = basiceo.makeArray(); 
+		// for(i=0; i < arr.length; i++) 
+		// {
+			// $.writeln("LoadBasicExternalObject: arr[" + i + "] = " + arr[i]);
+		// }
+
+		// $.writeln("LoadBasicExternalObject: " + basiceo.acceptBoolean(true));
+
+	// }
+	
+	// Handler to unload the the external object when Bridge closes down
+	// onExitEvent = function(event)
+	// {
+	//	if(event.object instanceof App)
+	//	{
+	//		if(event.type == "close")
+	//		{
+	//			$.writeln("LoadBasicExternalObject: closing and unloading ExternalObject");
+	//			basiceo.unload();
+	//		}
+	//	}
+	//	return {handled: false};
+	//}
+
+	// register the handler
+	app.eventHandlers.push({handler: onExitEvent});
+
+	return true;
+}
+
+new LoadBasicExternalObject().run();

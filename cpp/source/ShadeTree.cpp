@@ -10,7 +10,7 @@
 **************************************************************************/
 
 /**
- * \file BasicExternalObject.cpp
+ * \file ShadeTree.cpp
  * \brief The sample shows how to implement a basic external object and to extend the JavaScript DOM.
  *
  * The sample demonstrates how to pass simple data types back to JavaScript from the External Object
