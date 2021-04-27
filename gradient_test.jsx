@@ -2,9 +2,16 @@
     var color = createGradientColor(3, 1, 100, 100, 30);
     linepoints = [[0, 100], [100, 100], [100, 0], [0, 0]];
     newRect(linepoints, color);
-} else {
-    alert(app.activeDocument.selection[0].fillColor);
+} 
+
+else {
+    alert(app.activeDocument.selection[0].fillColor.origin);
+    app.activeDocument.selection[0].fillColor.origin = [0, 0];
+    alert(app.activeDocument.selection[0].fillColor.length);
+    alert(app.activeDocument.selection[0].fillColor.angle);
+    app.activeDocument.selection[0].fillColor.angle = 25;
 }
+
 
 function createGradientColor(step, mode, r, g, b) {
     var startColor = new RGBColor();
@@ -13,9 +20,9 @@ function createGradientColor(step, mode, r, g, b) {
     startColor.blue = b;
 
     var endColor = new RGBColor();
-    endColor.red = 0;
-    endColor.green = 0;
-    endColor.blue = 0;
+    endColor.red = 255;
+    endColor.green = 255;
+    endColor.blue = 255;
 
     var newGradient = app.activeDocument.gradients.add();
     newGradient.name = "newgradient" + (app.activeDocument.gradients.length + 1);
@@ -45,8 +52,19 @@ function newRect(linepoints, color) {
     var myDoc = app.activeDocument;
     var myLine = myDoc.pathItems.add();
     myLine.stroked = false;
-    myLine.filled = true;
+    myLine.filled = false;
     myLine.fillColor = color;
+    myLine.fillOverprint = true;
+    
+    var scaleMatrix = app.getScaleMatrix (2, 1);
+    // var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 2, 1);
+    var scale_rotateMatrix = app.concatenateRotationMatrix (scaleMatrix, 50);
+    var move_scale_rotateMatrix = app.concatenateTranslationMatrix(scale_rotateMatrix,100, 50);
+    myLine.transform(move_scale_rotateMatrix,false,false,true,false,0, Transformation.CENTER);
+    // myLine.translate(100, 20, );
+    // myLine.rotate(50, false, false, true, false, Transformation.CENTER);
+    myLine.translate(10, 10);
+
     var num = linepoints.length;
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
@@ -65,14 +83,16 @@ function newRect(linepoints, color) {
     }
 }
 
-function LoadBasicExternalObject() 
-{
+
+// function LoadBasicExternalObject() 
+// {
 	/**
 	 The context in which this snippet can run.
-	*/
-	this.requiredContext = "\tNeed to be running in context of Bridge and the external library needs to be available\n";	
-}
+	*/ 
+	// this.requiredContext = "\tNeed to be running in context of Bridge and the external library needs to be available\n";	
+// }
 
+/*
 LoadBasicExternalObject.prototype.getLibPath = function()
 {
 
@@ -157,5 +177,5 @@ LoadBasicExternalObject.prototype.run = function()
 
 	return true;
 }
-
-new LoadBasicExternalObject().run();
+*/
+// new LoadBasicExternalObject().run();
