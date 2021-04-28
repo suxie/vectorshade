@@ -87,8 +87,8 @@ function newRect(linepoints, color) {
         newClipping.pointType = PointType.CORNER;
     }
 
-    var moveMatrix = app.getTranslationMatrix(20, 20);
-    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 120, 120);
+    var moveMatrix = app.getTranslationMatrix(0, 0);
+    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 100, 100);
     var move_scale_rotateMatrix = app.concatenateRotationMatrix (scale_moveMatrix, 0);
     alert(move_scale_rotateMatrix.mValueTX);
     alert(move_scale_rotateMatrix.mValueTY);

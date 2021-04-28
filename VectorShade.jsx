@@ -114,7 +114,6 @@ function createWindow() {
         lightY = parseFloat(lightGroupYText.text);
         lightZ = parseFloat(lightGroupZText.text);
         material = materialDropdown.selection.index;
-        alert(material);
         div();
         logic(n, r, g, b, lightX, lightY, lightZ, material); // pass in arguments to logic, which used to be interpolate()
         myWindow.hide();
@@ -130,8 +129,9 @@ function hightlight(ids) {
     startColor.red = 255;
     startColor.green = 255;
     startColor.blue = 255;
+    var group = app.activeDocument.groupItems.add()
 
-    newRect(ids, startColor);
+    newRect(ids, group, startColor);
 }
 
 //creates a texture layer
@@ -161,7 +161,6 @@ function createColor(step, r, g, b) {
         return startColor;
 }
 
-//TODO: SUSAN LOOK HERE!!!!
 function getColor(r, g, b, n, lx, ly, r, p, centerX, centerY) {
     //n is the normal of format [x, y, z]
     //the following are just a random calculation i did 
@@ -366,11 +365,11 @@ function baseColor(sub, mode, r, g, b, lx, ly, lz) {
             normal = [normal_x, normal_y, 0];
             normals.push(normal);
             //visualize normal
-
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             line.setEntirePath([point, [point[0] + 10 * normal[0], point[1] + 10 * normal[1]]]);
-           
+           */
         }
 
         var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
@@ -556,7 +555,8 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
     
     brightest = 0;
     brightestidx = [];
-
+    var group = app.activeDocument.groupItems.add();
+    
     for (i = 0; i < layer1.length - 1; i++) {
        
         for (j = 0; j < layer1[0].length - 1; j++) {
@@ -578,7 +578,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
                 brightestidx = ids;
             }
 
-            newRect(ids, color);
+            newRect(ids, group, color);
 
             //normal visualization
             //var line = app.activeDocument.pathItems.add();
@@ -598,7 +598,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal2[i][j][2] + normal2[i][j + 1][2] + normal2[i + 1][j + 1][2] + normal2[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
-            newRect(ids, color);
+            newRect(ids, group, color);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -624,7 +624,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal3[i][j][2] + normal3[i][j + 1][2] + normal3[i + 1][j + 1][2] + normal3[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
-            newRect(ids, color);
+            newRect(ids, group, color);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -650,7 +650,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal4[i][j][2] + normal4[i][j + 1][2] + normal4[i + 1][j + 1][2] + normal4[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
-            newRect(ids, color);
+            newRect(ids, group, color);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -670,28 +670,30 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
 }
 
 
-function newRect(linepoints, color) {
+function newRect(linepoints, group, color) {
     var myDoc = app.activeDocument;
     var myLine = myDoc.pathItems.add();
     myLine.stroked = false;
     myLine.filled = true;
     myLine.fillColor = color;
     var num = linepoints.length;
+    var offArtBoard = [];
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
-        newPoint.anchor = linepoints[i];
+        newPoint.anchor = [-1 * linepoints[i][0], linepoints[i][1]];
         if (i == 0) {
             newPoint.leftDirection = newPoint.anchor;
-            newPoint.rightDirection = linepoints[i + 1];
+            newPoint.rightDirection = [-1 * linepoints[i + 1][0], linepoints[i + 1][1]];
         } else if (i == num - 1) {
-            newPoint.leftDirection = linepoints[i - 1];
+            newPoint.leftDirection = [-1 * linepoints[i - 1][0], linepoints[i - 1][1]];
             newPoint.rightDirection = newPoint.anchor;
         } else {
-            newPoint.leftDirection = linepoints[i - 1];
-            newPoint.rightDirection = linepoints[i + 1];
+            newPoint.leftDirection = [-1 * linepoints[i - 1][0], linepoints[i - 1][1]];
+            newPoint.rightDirection = [-1 * linepoints[i + 1][0], linepoints[i + 1][1]];
         }
         newPoint.pointType = PointType.CORNER;
     }
+    myLine.moveToBeginning(group);
 }
 
 //reverse a list
