@@ -383,7 +383,7 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
         var py = 2 * point[1] / (maxY - minY) + minY - 1; 
         var color = drawBaseColor(layers, layer_normals, mode, px, py, 0, r, g, b, x, y, z);
         var points = [color[1][0] - centerX, color[1][1] - centerY];
-        newRect([[minX, minY], [minX, maxY], [maxX, maxY], [maxX, minY]], color[0], color[1]);
+        newRect([[minX, minY], [minX, maxY], [maxX, maxY], [maxX, minY]], color[0], points);
     }
 }
 
@@ -664,7 +664,7 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
     return createGradientColor(brightest, darkest, colors);
 }
 
-// SHOULD NO LONGER BE USED
+// rectangle
 function newRect(linepoints, color, points) {
     var myDoc = app.activeDocument;
     var group = myDoc.groupItems.add();
@@ -698,8 +698,11 @@ function newRect(linepoints, color, points) {
     var scaleX = linepoints[2][0] - linepoints[0][0];
     var scaleY = linepoints[2][1] - linepoints[0][1];  
     
-    var moveMatrix = app.getTranslationMatrix(points[0] / scaleX, points[1] / scaleY);
-    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, scaleX, scaleY);
+    alert(points);
+    
+    var scaleMatrix = app.getScaleMatrix (scaleX, scaleY);
+    var scale_moveMatrix = app.concatenateTranslationMatrix(scaleMatrix, -1 * points[0] / 2, -1 * points[1] / 2);
+    
     var move_scale_rotateMatrix = app.concatenateRotationMatrix (scale_moveMatrix, 0);
     //alert(move_scale_rotateMatrix.mValueTX);
     //alert(move_scale_rotateMatrix.mValueTY);
