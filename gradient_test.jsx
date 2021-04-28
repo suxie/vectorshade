@@ -88,7 +88,7 @@ function newRect(linepoints, color) {
     }
 
     var moveMatrix = app.getTranslationMatrix(20, 20);
-    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 200, 200);
+    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 120, 120);
     var move_scale_rotateMatrix = app.concatenateRotationMatrix (scale_moveMatrix, 0);
     alert(move_scale_rotateMatrix.mValueTX);
     alert(move_scale_rotateMatrix.mValueTY);
