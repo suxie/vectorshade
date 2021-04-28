@@ -186,39 +186,36 @@ function getColor(px, py, pz, r, g, b, n, x, y, z) {
 
 //create gradient color, will be modified later with normals
 //will not be used in the future
-function createGradientColor(step, mode, r, g, b) {
+function createGradientColor(brightest, darkest, colors) {
     var startColor = new RGBColor();
-    startColor.red = r / (step + 1);
-    startColor.green = g;
-    startColor.blue = b;
+    startColor.red = brightest[1].red;
+    startColor.green = brightest[1].green;
+    startColor.blue = brightest[1].blue;
 
     var endColor = new RGBColor();
-    endColor.red = r / (step + 2);
-    endColor.green = g;
-    endColor.blue = b;
+    endColor.red = darkest[1].red;
+    endColor.green = darkest[1].green;
+    endColor.blue = darkest[1].blue;
+    
+    //alert(startColor.green);
+    //alert(endColor.green);
 
     var newGradient = app.activeDocument.gradients.add();
     newGradient.name = "newgradient" + (app.activeDocument.gradients.length + 1);
     newGradient.type = GradientType.RADIAL;
     // Modify the first gradient stop
     newGradient.gradientStops[0].rampPoint = 0;
-    newGradient.gradientStops[0].midPoint = 30;
+    newGradient.gradientStops[0].midPoint = 50;
     newGradient.gradientStops[0].color = startColor;
-    if (mode != 0) {
-        newGradient.gradientStops[0].color = endColor;
-    }
 
     // Modify the last gradient stop
-    newGradient.gradientStops[1].rampPoint = 80;
+    newGradient.gradientStops[1].rampPoint = 100;
     newGradient.gradientStops[1].color = endColor;
-    if (mode != 0) {
-        newGradient.gradientStops[1].color = startColor;
-    }
 
     var color = new GradientColor();
     color.gradient = newGradient;
-    
-    return color;
+        
+    return [color, brightest[2]];
 }
 
 //will not be used in the future
@@ -284,7 +281,6 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
         addLayer('translucency');
     }
     
-    
     for (var h = 0; h < paths.length; h++) {
         //first, find bounding box vertices
         var minX, minY, maxX, maxY;
@@ -333,11 +329,12 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
             normal = [normal_x, normal_y, 0];
             normals.push(normal);
             //visualize normal
-
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             line.setEntirePath([point, [point[0] + 10 * normal[0], point[1] + 10 * normal[1]]]);
-           
+            */
+            
         }
 
         var d1, d2, d3, d4, centerX, centerY, index1, index2, index3, index4;
@@ -348,8 +345,6 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
 
         centerX = (minX + maxX) / 2;
         centerY = (minY + maxY) / 2;
-
-       
 
         // find the four points that is closest to the vertices of the bounding box
         // formula is d=√((x_2-x_1)²+(y_2-y_1)²)
@@ -386,7 +381,9 @@ function baseColor(sub, mode, r, g, b, x, y, z) {
         findMid(p, index1, index2, index3, index4, centerX, centerY, normals, layers, layer_normals);
         var px = 2 * point[0] / (maxX - minX) + minX - 1;
         var py = 2 * point[1] / (maxY - minY) + minY - 1; 
-        drawBaseColor(layers, layer_normals, mode, px, py, 0, r, g, b, x, y, z);
+        var color = drawBaseColor(layers, layer_normals, mode, px, py, 0, r, g, b, x, y, z);
+        var points = [color[1][0] - centerX, color[1][1] - centerY];
+        newRect([[minX, minY], [minX, maxY], [maxX, maxY], [maxX, minY]], color[0], color[1]);
     }
 }
 
@@ -523,8 +520,12 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
     normal3 = normals[2];
     normal4 = normals[3];
     
+    var colors = [];
+    var brightest = [Number.MIN_VALUE, new RGBColor(), [px, py, px]];
+    var darkest = [Number.MAX_VALUE, new RGBColor(), [px, py, pz]];
     
     for (i = 0; i < layer1.length - 1; i++) {
+        
         for (j = 0; j < layer1[0].length - 1; j++) {
             ids = [];
             ids.push(layer1[i][j]);
@@ -534,15 +535,32 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
 
             n = normal1[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
             color = getColor(px, py, pz, r, g, b, n, x, y, z);
-            newRect(ids, color);
+            if (j == Math.floor(layer4[0].length / 2)) {
+                colors.push([[px, py, pz], color]);
+            }
+            brightness = color.red + color.green + color.blue;
+            if (brightness > brightest[0]) {
+                brightest[0] = brightness;
+                brightest[1] = color;
+                brightest[2] = [px, py, pz];
+            } 
+            if (brightness < darkest[0]) {
+                darkest[0] = brightness;
+                darkest[1] = color;
+                darkest[2] = [px, py, pz];
+            }
 
             //normal visualization
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             point = layer1[i][j];
             w = normal1[i][j][2] * 20 + 5;
             line.setEntirePath([point, [point[0] + w * normal1[i][j][0], point[1] + w * normal1[i][j][1]]]);
+            */
         }
+        
+    
         for (j = 0; j < layer2[0].length - 1; j++) {
             ids = [];
             ids.push(layer2[i][j]);
@@ -551,17 +569,31 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
             ids.push(layer2[i + 1][j]);
             n = normal2[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
             color = getColor(px, py, pz, r, g, b, n, x, y, z);
-            newRect(ids, color);
-
+            if (j == Math.floor(layer4[0].length / 2)) {
+                colors.push([[px, py, pz], color]);
+            }
+            brightness = color.red + color.green + color.blue;
+            if (brightness > brightest[0]) {
+                brightest[0] = brightness;
+                brightest[1] = color;
+                brightest[2] = [px, py, pz];
+            } 
+            if (brightness < darkest[0]) {
+                darkest[0] = brightness;
+                darkest[1] = color;
+                darkest[2] = [px, py, pz];
+            }
 
             //normal visualization
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             point = layer2[i][j];
             w = normal2[i][j][2] * 20 + 5;
             line.setEntirePath([point, [point[0] + w * normal2[i][j][0], point[1] + w * normal2[i][j][1]]]);
+            */
         }
-
+    
         for (j = 0; j < layer3[0].length - 1; j++) {
             ids = [];
             ids.push(layer3[i][j]);
@@ -570,15 +602,29 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
             ids.push(layer3[i + 1][j]);
             n = normal3[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
             color = getColor(px, py, pz, r, g, b, n, x, y, z);
-            newRect(ids, color);
-
+            if (j == Math.floor(layer4[0].length / 2)) {
+                colors.push([[px, py, pz], color]);
+            }
+            brightness = color.red + color.green + color.blue;
+            if (brightness > brightest[0]) {
+                brightest[0] = brightness;
+                brightest[1] = color;
+                brightest[2] = [px, py, pz];
+            } 
+            if (brightness < darkest[0]) {
+                darkest[0] = brightness;
+                darkest[1] = color;
+                darkest[2] = [px, py, pz];
+            }
 
             //normal visualization
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             point = layer3[i][j];
             w = normal3[i][j][2] * 20 + 5;
             line.setEntirePath([point, [point[0] + w * normal3[i][j][0], point[1] + w * normal3[i][j][1]]]);
+            */
         }
 
         for (j = 0; j < layer4[0].length - 1; j++) {
@@ -589,26 +635,49 @@ function drawBaseColor(layers, normals, mode, px, py, pz, r, g, b, x, y, z) {
             ids.push(layer4[i + 1][j]);
             n = normal4[i][j] // normal of one of the 4 points, could be updated to an average of all the 4 normals
             color = getColor(px, py, pz, r, g, b, n, x, y, z);
-            newRect(ids, color);
-
-
+            if (j == Math.floor(layer4[0].length / 2)) {
+                colors.push([[px, py, pz], color]);
+            }
+            brightness = color.red + color.green + color.blue;
+            if (brightness > brightest[0]) {
+                brightest[0] = brightness;
+                brightest[1] = color;
+                brightest[2] = [px, py, pz];
+            } 
+            if (brightness < darkest[0]) {
+                darkest[0] = brightness;
+                darkest[1] = color;
+                darkest[2] = [px, py, pz];
+            }
+        
             //normal visualization
+            /*
             var line = app.activeDocument.pathItems.add();
             line.stroked = true;
             point = layer4[i][j];
             w = normal4[i][j][2] * 20 + 5;
             line.setEntirePath([point, [point[0] + w * normal4[i][j][0], point[1] + w * normal4[i][j][1]]]);
+            */
         }
     }
+    
+    return createGradientColor(brightest, darkest, colors);
 }
 
-
-function newRect(linepoints, color) {
+// SHOULD NO LONGER BE USED
+function newRect(linepoints, color, points) {
     var myDoc = app.activeDocument;
+    var group = myDoc.groupItems.add();
     var myLine = myDoc.pathItems.add();
+    var selection = myDoc.selection[0];
     myLine.stroked = false;
-    myLine.filled = true;
+    myLine.filled = false;
     myLine.fillColor = color;
+    myLine.moveToBeginning(group);
+    
+    selection.filled = true;
+    selection.stroked = false;
+   
     var num = linepoints.length;
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
@@ -625,6 +694,19 @@ function newRect(linepoints, color) {
         }
         newPoint.pointType = PointType.CORNER;
     }
+    
+    var scaleX = linepoints[2][0] - linepoints[0][0];
+    var scaleY = linepoints[2][1] - linepoints[0][1];  
+    
+    var moveMatrix = app.getTranslationMatrix(points[0] / scaleX, points[1] / scaleY);
+    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, scaleX, scaleY);
+    var move_scale_rotateMatrix = app.concatenateRotationMatrix (scale_moveMatrix, 0);
+    //alert(move_scale_rotateMatrix.mValueTX);
+    //alert(move_scale_rotateMatrix.mValueTY);
+    myLine.transform(move_scale_rotateMatrix,true,false,true,false,0, Transformation.CENTER);
+    selection.clipping = true;
+    selection.moveToBeginning(group);
+    group.clipped = true;
 }
 
 //reverse a list

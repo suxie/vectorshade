@@ -50,37 +50,52 @@ function createGradientColor(step, mode, r, g, b) {
 
 function newRect(linepoints, color) {
     var myDoc = app.activeDocument;
+    var group = app.activeDocument.groupItems.add();
     var myLine = myDoc.pathItems.add();
     myLine.stroked = false;
     myLine.filled = false;
     myLine.fillColor = color;
-    myLine.fillOverprint = true;
+    myLine.moveToBeginning(group);
     
-    var scaleMatrix = app.getScaleMatrix (2, 1);
-    // var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 2, 1);
-    var scale_rotateMatrix = app.concatenateRotationMatrix (scaleMatrix, 50);
-    var move_scale_rotateMatrix = app.concatenateTranslationMatrix(scale_rotateMatrix,100, 50);
-    myLine.transform(move_scale_rotateMatrix,false,false,true,false,0, Transformation.CENTER);
-    // myLine.translate(100, 20, );
-    // myLine.rotate(50, false, false, true, false, Transformation.CENTER);
-    myLine.translate(10, 10);
-
+    var clippingMask = myDoc.pathItems.add();
+    clippingMask.filled = true;
+    clippingMask.stroked = false;
+    
     var num = linepoints.length;
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
         newPoint.anchor = linepoints[i];
+        var newClipping = clippingMask.pathPoints.add();
+        newClipping.anchor = linepoints[i];
         if (i == 0) {
             newPoint.leftDirection = newPoint.anchor;
             newPoint.rightDirection = linepoints[i + 1];
+            newClipping.leftDirection = newPoint.anchor;
+            newClipping.rightDirection = linepoints[i + 1];
         } else if (i == num - 1) {
             newPoint.leftDirection = linepoints[i - 1];
             newPoint.rightDirection = newPoint.anchor;
+            newClipping.leftDirection = linepoints[i - 1];
+            newClipping.rightDirection = newPoint.anchor;
         } else {
             newPoint.leftDirection = linepoints[i - 1];
             newPoint.rightDirection = linepoints[i + 1];
+            newClipping.leftDirection = linepoints[i - 1];
+            newClipping.rightDirection = linepoints[i + 1];
         }
         newPoint.pointType = PointType.CORNER;
+        newClipping.pointType = PointType.CORNER;
     }
+
+    var moveMatrix = app.getTranslationMatrix(20, 20);
+    var scale_moveMatrix = app.concatenateScaleMatrix (moveMatrix, 200, 200);
+    var move_scale_rotateMatrix = app.concatenateRotationMatrix (scale_moveMatrix, 0);
+    alert(move_scale_rotateMatrix.mValueTX);
+    alert(move_scale_rotateMatrix.mValueTY);
+    myLine.transform(move_scale_rotateMatrix,true,false,true,false,0, Transformation.CENTER);
+    clippingMask.clipping = true;
+    clippingMask.moveToBeginning(group);
+    group.clipped = true;
 }
 
 
