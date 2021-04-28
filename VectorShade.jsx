@@ -123,15 +123,15 @@ function createWindow() {
 }
 
 //creates a highlight layer
-function hightlight(ids) {
+function hightlight(ids, centerX) {
     addLayer('highlight');
     var startColor = new RGBColor();
     startColor.red = 255;
     startColor.green = 255;
     startColor.blue = 255;
-    var group = app.activeDocument.groupItems.add()
+    var group = app.activeDocument.groupItems.add();
 
-    newRect(ids, group, startColor);
+    newRect(ids, group, startColor, centerX);
 }
 
 //creates a texture layer
@@ -578,7 +578,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
                 brightestidx = ids;
             }
 
-            newRect(ids, group, color);
+            newRect(ids, group, color, centerX);
 
             //normal visualization
             //var line = app.activeDocument.pathItems.add();
@@ -598,7 +598,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal2[i][j][2] + normal2[i][j + 1][2] + normal2[i + 1][j + 1][2] + normal2[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
-            newRect(ids, group, color);
+            newRect(ids, group, color, centerX);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -624,7 +624,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal3[i][j][2] + normal3[i][j + 1][2] + normal3[i + 1][j + 1][2] + normal3[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
-            newRect(ids, group, color);
+            newRect(ids, group, color, centerX);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -650,7 +650,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal4[i][j][2] + normal4[i][j + 1][2] + normal4[i + 1][j + 1][2] + normal4[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
-            newRect(ids, group, color);
+            newRect(ids, group, color, centerX);
 
             curr_bright = (color.red + color.green + color.blue) / 3;
             if (curr_bright > brightest) {
@@ -666,30 +666,39 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
         }
     }
 
-    hightlight(brightestidx);
+    hightlight(brightestidx, centerX);
 }
 
 
-function newRect(linepoints, group, color) {
+function newRect(linepoints, group, color, centerX) {
     var myDoc = app.activeDocument;
     var myLine = myDoc.pathItems.add();
     myLine.stroked = false;
     myLine.filled = true;
     myLine.fillColor = color;
     var num = linepoints.length;
-    var offArtBoard = [];
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
-        newPoint.anchor = [-1 * linepoints[i][0], linepoints[i][1]];
+        var x = linepoints[i][0] - centerX;
+        x += -1 * centerX;
+        newPoint.anchor = [x, linepoints[i][1]];
         if (i == 0) {
             newPoint.leftDirection = newPoint.anchor;
-            newPoint.rightDirection = [-1 * linepoints[i + 1][0], linepoints[i + 1][1]];
+            x = linepoints[i + 1][0] - centerX;
+            x += -1 * centerX;
+            newPoint.rightDirection = [x, linepoints[i + 1][1]];
         } else if (i == num - 1) {
-            newPoint.leftDirection = [-1 * linepoints[i - 1][0], linepoints[i - 1][1]];
+            x = linepoints[i - 1][0] - centerX;
+            x += -1 * centerX;
+            newPoint.leftDirection = [x, linepoints[i - 1][1]];
             newPoint.rightDirection = newPoint.anchor;
         } else {
-            newPoint.leftDirection = [-1 * linepoints[i - 1][0], linepoints[i - 1][1]];
-            newPoint.rightDirection = [-1 * linepoints[i + 1][0], linepoints[i + 1][1]];
+            x = linepoints[i - 1][0] - centerX;
+            x += -1 * centerX;
+            newPoint.leftDirection = [x, linepoints[i - 1][1]];
+            x = linepoints[i + 1][0] - centerX;
+            x += -1 * centerX;
+            newPoint.rightDirection = [x, linepoints[i + 1][1]];
         }
         newPoint.pointType = PointType.CORNER;
     }
