@@ -22,7 +22,7 @@ function logic(sub, r, g, b, x, y, z, material) {
 
 //creates UI
 function createWindow() {
-    var myWindow = new Window("dialog", "Form");
+    var myWindow = new Window("dialog", "VectorShade");
     // subdiv slider
     var subdivGroup = myWindow.add("group");
     subdivGroup.add("statictext", undefined, "Subdivisions:");
