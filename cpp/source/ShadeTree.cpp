@@ -46,6 +46,8 @@
 #include "SoSharedLibDefs.h"
 #include <string>
 #include "illustrator/AIGradient.h"
+#include "ShadeNode.h"
+#include <memory>
 
 #if defined (_WINDOWS)
 	#pragma warning(disable : 4996) // Turn off warning about deprecated strcpy on Win
@@ -55,6 +57,9 @@
 * \brief To allow string manipulation
 */
 using namespace std;
+
+std::unique_ptr<ShadeNode> root;
+
 
 /**
 * \brief Utility function to handle strings and memory clean up
@@ -71,6 +76,56 @@ static char* getNewBuffer(string& s)
 	strncpy(buff, s.c_str(), 1+s.length());
 
 	return buff;
+}
+
+extern "C" SHADETREE_API long buildTree(TaggedData* argv, long argc, TaggedData * retval) {
+
+  // accept no arguments
+  if (argc != 3)
+  {
+    return kESErrBadArgumentList;
+  }
+
+  
+  if (argv[0].type != kTypeDouble || 
+      argv[1].type != kTypeDouble ||
+      argv[2].type != kTypeDouble)
+  {
+    return kESErrBadArgumentList;
+  }
+
+  root = std::make_unique<ShadeNode>((int)argv[0].data.fltval, nullptr, nullptr);
+  
+  std::unique_ptr<ShadeNode> left = std::make_unique<ShadeNode>((int) argv[1].data.fltval, nullptr, nullptr);
+  std::unique_ptr<ShadeNode> right = std::make_unique<ShadeNode>((int) argv[2].data.fltval, nullptr, nullptr);
+  left->parent = root.get();
+  right->parent = root.get();
+
+  root->left = left.get();
+  root->right = right.get();
+
+  // The returned value type
+  retval->type = kTypeScript;
+
+  string s("["); 
+  s.append(std::to_string(root->type));
+  s.append(", ");
+  s.append(std::to_string(root->left->type));
+  s.append(", ");
+  s.append(std::to_string(root->right->type));
+  s.append("]");
+  /*
+  s += root->type;
+  s += ", ";
+  s += root->left->type;
+  s += ", ";
+  s += root->right->type;
+  s += "]";
+  */
+  
+  retval->data.string = getNewBuffer(s);
+
+  return kESErrOK;
 }
 
 extern "C" SHADETREE_API long makeGradient(TaggedData* argv, long argc, TaggedData * retval) {

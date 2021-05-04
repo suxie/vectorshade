@@ -19,6 +19,7 @@ window.show();
 // it is called after UI is done
 function logic(sub, r, g, b, x, y, z, material) {
     div(seg);
+    buildShadeTree(material);
     baseColor(sub, material, r, g, b, x, y, z);
     //texture();
     //transparency();
@@ -968,17 +969,29 @@ function newPath(linepoints, color, width) {
 }
 
 // ------------------------------- Shade Trees
-// base color = 0
-// highlight external = 1
-// highlight internal = 2
-// environment reflection = 3
-// 
-class ShadeNode {
-    constructor(base, left, right) {
-        this.base = 
+// NODE VALUES: 
+// multiply node = -3
+// additive node = -2
+// screen node = -1
+// NULL = 0
+// base color = 1
+// highlight external = 2
+// highlight internal = 3
+// environment reflection = 4
+// internal reflection = 5
+// transparency = 6
+// translucency = 7
+
+function buildShadeTree(material) {
+    if (material == 0) {
+        return ShadeTree(ShadeNode(0, null, null));
+    } else if (material == 1) {
+        var root = ShadeNode(-1, null, null);
+        root.setLeft(ShadeNode(-1, 0, 3));
+        root.setRight(ShadeNode(1, null, null));
+        return ShadeTree(root);
     }
 }
-
 
 // ----------------------------------------------
 

@@ -99,15 +99,14 @@ function newRect(linepoints, color) {
 }
 
 
-// function LoadBasicExternalObject() 
-// {
+function LoadBasicExternalObject() 
+{
 	/**
 	 The context in which this snippet can run.
 	*/ 
 	// this.requiredContext = "\tNeed to be running in context of Bridge and the external library needs to be available\n";	
-// }
+}
 
-/*
 LoadBasicExternalObject.prototype.getLibPath = function()
 {
 
@@ -139,10 +138,11 @@ LoadBasicExternalObject.prototype.run = function()
 {
 	
 	var libPath = this.getLibPath();
-    alert(libPath);
+    // alert(libPath);
 	var shadeTree = new ExternalObject("lib:" + libPath);
+    alert(shadeTree.buildTree(10, 20, 55));
     
-    alert(shadeTree.getAverage(10, 20, 55));
+    // alert(shadeTree.buildTree(10, 20, 55));
 
 	// Create the menu element
 	// var newMenu = MenuElement.create( "menu", "SDK External Object", "after Help", "myBEOMenu" );
@@ -174,23 +174,23 @@ LoadBasicExternalObject.prototype.run = function()
 	// }
 	
 	// Handler to unload the the external object when Bridge closes down
-	// onExitEvent = function(event)
-	// {
-	//	if(event.object instanceof App)
-	//	{
-	//		if(event.type == "close")
-	//		{
-	//			$.writeln("LoadBasicExternalObject: closing and unloading ExternalObject");
-	//			basiceo.unload();
-	//		}
-	//	}
-	//	return {handled: false};
-	//}
+	onExitEvent = function(event)
+	{
+		if(event.object instanceof App)
+		{
+			if(event.type == "close")
+			{
+				$.writeln("LoadBasicExternalObject: closing and unloading ExternalObject");
+				basiceo.unload();
+			}
+		}
+		return {handled: false};
+	}
 
 	// register the handler
-	app.eventHandlers.push({handler: onExitEvent});
+	// app.eventHandlers.push({handler: onExitEvent});
 
 	return true;
 }
-*/
-// new LoadBasicExternalObject().run();
+
+new LoadBasicExternalObject().run();
