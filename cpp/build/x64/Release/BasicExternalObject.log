@@ -1,7 +1,8 @@
-﻿     Creating library C:\Users\Susan\Documents\Github\vectorshade\cpp\build\x64\Release\ShadeTree.lib and object C:\Users\Susan\Documents\Github\vectorshade\cpp\build\x64\Release\ShadeTree.exp
+﻿  ShadeTree.cpp
+     Creating library C:\Users\Susan\Documents\Github\vectorshade\cpp\build\x64\Release\ShadeTree.lib and object C:\Users\Susan\Documents\Github\vectorshade\cpp\build\x64\Release\ShadeTree.exp
   Generating code
-  27 of 116 functions (23.3%) were compiled, the rest were copied from previous compilation.
-    13 functions were new in current compilation
-    10 functions had inline decision re-evaluated but remain unchanged
+  0 of 137 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   BasicExternalObject.vcxproj -> C:\Users\Susan\Documents\Github\vectorshade\cpp\build\x64\Release\ShadeTree.dll

@@ -138,9 +138,11 @@ LoadBasicExternalObject.prototype.run = function()
 {
 	
 	var libPath = this.getLibPath();
-    // alert(libPath);
+    alert(libPath);
 	var shadeTree = new ExternalObject("lib:" + libPath);
     alert(shadeTree.buildTree(10, 20, 55));
+    alert(shadeTree.addChild(0, 1, 1));
+    alert(shadeTree.addChild(1, 1, 1, 0));
     
     // alert(shadeTree.buildTree(10, 20, 55));
 

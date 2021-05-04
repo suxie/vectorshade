@@ -4,6 +4,7 @@ var ver10 = (version.indexOf('10') == 0);
 var seg = 25;
 var n = 2;
 var paths = [];
+var shadeTree = new LoadBasicExternalObject();
 getPathItemsInSelection(n, paths);
 
 //clay 0
@@ -19,8 +20,7 @@ window.show();
 // it is called after UI is done
 function logic(sub, r, g, b, x, y, z, material) {
     div(seg);
-    buildShadeTree(material);
-    baseColor(sub, material, r, g, b, x, y, z);
+    shadeTree(sub, material, r, g, b, x, y, z);
     //texture();
     //transparency();
 }
@@ -128,51 +128,39 @@ function createWindow() {
 
 //creates a highlight layer
 function hightlight(ids, centerX) {
-    addLayer('externalHighlight');
     var startColor = new RGBColor();
     startColor.red = 255;
     startColor.green = 255;
     startColor.blue = 255;
     var group = app.activeDocument.groupItems.add();
 
-    newRect(ids, group, startColor, centerX);
-}
-
-function ambiantReflection(ids, centerX) {
-    addLayer('internalHighlight');
-    var startColor = new RGBColor();
-    startColor.red = 255;
-    startColor.green = 255;
-    startColor.blue = 255;
-    var group = app.activeDocument.groupItems.add();
-    newRect(ids, group, startColor, centerX);
+    newRect(ids, group, startColor, centerX, 100);
 }
 
 //creates a texture layer
 function texture() {
-    addLayer('texture');
-}
-
-//creates a transparency layer
-function transparency() {
-    addLayer('transparency');
+    addLayer('texture', 100, "screen");
 }
 
 //add a new layer with given name
-function addLayer(name) {
+function addLayer(name, opacity, blendMode) {
     var myDoc = app.activeDocument;
     var myLayer = myDoc.layers.add();
     myLayer.name = name;
-}
-
-//create color with given r, g, b, step
-//will not be used in the future
-function createColor(step, r, g, b) {
-        var startColor = new RGBColor();
-        startColor.red = r / (step + 1);
-        startColor.green = g;
-        startColor.blue = b;
-        return startColor;
+    myLayer.opacity = opacity;
+    if (blendMode == "screen") {
+        myLayer.blendingMode = BlendModes.SCREEN;
+    }
+    if (blendMode == "overlay") {
+        myLayer.blendingMode = BlendModes.OVERLAY;
+    }
+    if (blendMode == "multiply") {
+        myLayer.blendingMode = BlendModes.MULTIPLY;
+    }
+    if (blendMode == "lighten") {
+        myLayer.blendingMode = BlendModes.LIGHTEN;
+    }
+    
 }
 
 function getColorBrighter(r, g, b, n, lx, ly, r, p, centerX, centerY) {
@@ -278,13 +266,6 @@ function getColorDarker(r, g, b, n, lx, ly, r, p, centerX, centerY) {
 }
 
 function getColor(r, g, b, n, lx, ly, r, p, centerX, centerY) {
-    //n is the normal of format [x, y, z]
-    //the following are just a random calculation i did 
-    //this method is called in baseColor(), which is called by logic()
-    //logic is called when the UI is all set in createWindow()
-    //n is the normal of format [x, y, z]
-    //this method is called in baseColor(), which is called by logic()
-    //logic is called when the UI is all set in createWindow()
     
     //convert spherical to 
     lx_loc = r * Math.sin(lx) * Math.cos(ly);
@@ -331,49 +312,30 @@ function getColor(r, g, b, n, lx, ly, r, p, centerX, centerY) {
     return startColor;
 }
 
-
-//create gradient color, will be modified later with normals
-//will not be used in the future
-function createGradientColor(step, mode, r, g, b) {
-    var startColor = new RGBColor();
-    startColor.red = r / (step + 1);
-    startColor.green = g;
-    startColor.blue = b;
-
-    var endColor = new RGBColor();
-    endColor.red = r / (step + 2);
-    endColor.green = g;
-    endColor.blue = b;
-
-    var newGradient = app.activeDocument.gradients.add();
-    newGradient.name = "newgradient" + (app.activeDocument.gradients.length + 1);
-    newGradient.type = GradientType.RADIAL;
-    // Modify the first gradient stop
-    newGradient.gradientStops[0].rampPoint = 0;
-    newGradient.gradientStops[0].midPoint = 30;
-    newGradient.gradientStops[0].color = startColor;
-    if (mode != 0) {
-        newGradient.gradientStops[0].color = endColor;
+function getEnvironmentReflectionColor(mode, y, centerY) {
+    c = 0;
+    if (mode == 2) {
+        if (y >= -0.1) {
+            y = Math.abs(y);
+            c = 200 * (1 - y) + 150;
+            if (c > 255) c = 255;
+        } else {
+            c = 50;
+        }
+    } else {
+        y = Math.abs(y);
+        c = 200 * (1 - y) + 150;
+        if (c > 255) c = 255;
     }
-
-    // Modify the last gradient stop
-    newGradient.gradientStops[1].rampPoint = 80;
-    newGradient.gradientStops[1].color = endColor;
-    if (mode != 0) {
-        newGradient.gradientStops[1].color = startColor;
-    }
-
-    var color = new GradientColor();
-    color.gradient = newGradient;
     
-    return color;
+    
+    var startColor = new RGBColor();
+    startColor.red = c;
+    startColor.green = c;
+    startColor.blue = c;
+    return startColor;
 }
 
-//will not be used in the future
-function createWidth(step) {
-
-    return 100 / (step + 1);
-}
 
 //divide the path into segments of given length
 function div(seg) {
@@ -425,11 +387,8 @@ function div(seg) {
 
 
 
-function baseColor(sub, mode, r, g, b, lx, ly, lz) {
-
-     addLayer('base');
-    
-      
+function shadeTree(sub, mode, r, g, b, lx, ly, lz) {
+       
     for (var h = 0; h < paths.length; h++) {
         //first, find bounding box vertices
         var minX, minY, maxX, maxY;
@@ -477,11 +436,6 @@ function baseColor(sub, mode, r, g, b, lx, ly, lz) {
             normal_y /= Math.sqrt(normal_x * normal_x + normal_y * normal_y);
             normal = [normal_x, normal_y, 0];
             normals.push(normal);
-            //visualize normal
-
-            //var line = app.activeDocument.pathItems.add();
-            //line.stroked = true;
-            //line.setEntirePath([point, [point[0] + 10 * normal[0], point[1] + 10 * normal[1]]]);
            
         }
 
@@ -527,9 +481,211 @@ function baseColor(sub, mode, r, g, b, lx, ly, lz) {
         layers = [];
         layer_normals = [];
         findMid(p, index1, index2, index3, index4, centerX, centerY, normals, layers, layer_normals);
-        drawBaseColor(layers, layer_normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY);
+        
+        if (mode == 0) {
+            
+        }
+        
+        // create shadetrees:
+        var matString = shadeTree.plastic();
+        
+        //create shade tree for different materials
+        if (mode == 0 || mode == 1 || mode == 2) { //BASE: clay, plastic, chrome
+            drawBaseColor(layers, layer_normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY);
+        }
+        if (mode == 3) { //TRANSLUCENCY: jelly
+            createTranslucency(layers, layer_normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY);
+        }
+        if (mode == 4 || mode == 3) { //TRANSPARENCY: jelly and glass
+            createTransparency(layers, layer_normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY);
+        }
+        if (mode == 1 || mode == 2 || mode == 3 || mode == 4) { //ENVIRONMENT REFLECTION: plastic, chrome, jelly, glass
+            createEnviornmentReflection(layers, layer_normals, mode, centerX, centerY);
+        }
+        if (mode != 0) { //HIGHLIGHT: plastic, chrome, jelly, glass
+            createHighlightReflection(layers, layer_normals, mode, centerX, centerY);
+        }   
     }
 }
+
+function helperFindDot(layer1, normal1, centerX, centerY) {
+    viewDir = [centerX - layer1[i][j][0], centerY - layer1[i][j][1], 100 - normal1[i][j][2] * 10];
+    viewDirWeight = Math.sqrt(viewDir[0] * viewDir[0] + viewDir[1] * viewDir[1] + viewDir[2] * viewDir[2]);
+    viewDir_norm = [viewDir[0] / viewDirWeight, viewDir[1] / viewDirWeight, viewDir[2] / viewDirWeight];
+    dot = viewDir_norm[0] * normal1[i][j][0] + viewDir_norm[1] * normal1[i][j][1] + viewDir_norm[2] * normal1[i][j][2];
+    return dot;
+}
+
+function helperFindDotInvert(layer1, normal1, centerX, centerY) {
+    viewDir = [centerX - layer1[i][j][0], centerY - layer1[i][j][1], 100 - normal1[i][j][2] * 10];
+    viewDirWeight = Math.sqrt(viewDir[0] * viewDir[0] + viewDir[1] * viewDir[1] + viewDir[2] * viewDir[2]);
+    viewDir_norm = [viewDir[0] / viewDirWeight, viewDir[1] / viewDirWeight, viewDir[2] / viewDirWeight];
+    dot = -1 * viewDir_norm[0] * normal1[i][j][0] - viewDir_norm[1] * normal1[i][j][1] + viewDir_norm[2] * normal1[i][j][2];
+    return dot;
+}
+
+function createHighlightReflection(layers, normals, mode, centerX, centerY) {
+    addLayer('HighlightReflection', 100, "screen");
+
+    layer1 = layers[0];
+    layer2 = layers[1];
+    layer3 = layers[2];
+    layer4 = layers[3];
+
+    normal1 = normals[0];
+    normal2 = normals[1];
+    normal3 = normals[2];
+    normal4 = normals[3];
+
+    localMax = -1;
+    location = [];
+
+    localMaxInvert = -1;
+    locationInvert = [];
+
+    for (i = 0; i < layer1.length - 1; i++) {
+
+        for (j = 0; j < layer1[0].length - 1; j++) {
+            dot = helperFindDot(layer1, normal1, centerX, centerY);
+            
+            if (dot > localMax) {
+                localMax = dot;
+                location = [];
+                location.push(layer1[i][j]);
+                location.push(layer1[i][j + 1]);
+                location.push(layer1[i + 1][j + 1]);
+                location.push(layer1[i + 1][j]);
+            }
+
+            dotInvert = helperFindDotInvert(layer1, normal1, centerX, centerY);
+            
+            if (dotInvert > localMaxInvert) {
+                localMaxInvert = dotInvert;
+                locationInvert = [];
+                locationInvert.push(layer1[i][j]);
+                locationInvert.push(layer1[i][j + 1]);
+                locationInvert.push(layer1[i + 1][j + 1]);
+                locationInvert.push(layer1[i + 1][j]);
+            }
+        }
+        for (j = 0; j < layer2[0].length - 1; j++) {
+            dot = helperFindDot(layer2, normal2, centerX, centerY);
+
+            if (dot > localMax) {
+                localMax = dot;
+                location = [];
+                location.push(layer2[i][j]);
+                location.push(layer2[i][j + 1]);
+                location.push(layer2[i + 1][j + 1]);
+                location.push(layer2[i + 1][j]);
+            }
+            
+        }
+
+        for (j = 0; j < layer3[0].length - 1; j++) {
+            dot = helperFindDot(layer3, normal3, centerX, centerY);
+
+            if (dot > localMax) {
+                localMax = dot;
+                location = [];
+                location.push(layer3[i][j]);
+                location.push(layer3[i][j + 1]);
+                location.push(layer3[i + 1][j + 1]);
+                location.push(layer3[i + 1][j]);
+            }
+            
+        }
+
+        for (j = 0; j < layer4[0].length - 1; j++) {
+            dot = helperFindDot(layer4, normal4, centerX, centerY);
+            
+            if (dot > localMax) {
+                localMax = dot;
+                location = [];
+                location.push(layer4[i][j]);
+                location.push(layer4[i][j + 1]);
+                location.push(layer4[i + 1][j + 1]);
+                location.push(layer4[i + 1][j]);
+            }
+            
+        }
+    }
+    if (mode != 0) {
+        hightlight(location, centerX);
+    }
+    if (mode == 3 || mode == 4) {
+        hightlight(locationInvert, centerX);
+    }
+}
+
+function createEnviornmentReflection(layers, normals, mode, centerX, centerY) {
+    addLayer('EnvironmentReflection', 25, "screen");
+
+    layer1 = layers[0];
+    layer2 = layers[1];
+    layer3 = layers[2];
+    layer4 = layers[3];
+
+    normal1 = normals[0];
+    normal2 = normals[1];
+    normal3 = normals[2];
+    normal4 = normals[3];
+
+
+    var group = app.activeDocument.groupItems.add();
+
+    for (i = 0; i < layer1.length - 1; i++) {
+
+        for (j = 0; j < layer1[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer1[i][j]);
+            ids.push(layer1[i][j + 1]);
+            ids.push(layer1[i + 1][j + 1]);
+            ids.push(layer1[i + 1][j]);
+            n1 = (normal1[i][j][1] + normal1[i][j + 1][1] + normal1[i + 1][j + 1][1] + normal1[i + 1][j][1]) / 4;
+            y = n1;
+            color = getEnvironmentReflectionColor(mode, y, centerY);
+
+            newRect(ids, group, color, centerX, 100);
+        }
+        for (j = 0; j < layer2[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer2[i][j]);
+            ids.push(layer2[i][j + 1]);
+            ids.push(layer2[i + 1][j + 1]);
+            ids.push(layer2[i + 1][j]);
+            n1 = (normal2[i][j][1] + normal2[i][j + 1][1] + normal2[i + 1][j + 1][1] + normal2[i + 1][j][1]) / 4;
+            y = n1;
+            color = getEnvironmentReflectionColor(mode, y, centerY);
+            newRect(ids, group, color, centerX, 100);
+        }
+
+        for (j = 0; j < layer3[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer3[i][j]);
+            ids.push(layer3[i][j + 1]);
+            ids.push(layer3[i + 1][j + 1]);
+            ids.push(layer3[i + 1][j]);
+            n1 = (normal3[i][j][1] + normal3[i][j + 1][1] + normal3[i + 1][j + 1][1] + normal3[i + 1][j][1]) / 4;
+            y = n1;
+            color = getEnvironmentReflectionColor(mode, y, centerY);
+            newRect(ids, group, color, centerX, 100);
+        }
+
+        for (j = 0; j < layer4[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer4[i][j]);
+            ids.push(layer4[i][j + 1]);
+            ids.push(layer4[i + 1][j + 1]);
+            ids.push(layer4[i + 1][j]);
+            n1 = (normal4[i][j][1] + normal4[i][j + 1][1] + normal4[i + 1][j + 1][1] + normal4[i + 1][j][1]) / 4;
+            y = n1;
+            color = getEnvironmentReflectionColor(mode, y, centerY);
+            newRect(ids, group, color, centerX, 100);
+        }
+    }
+}
+
 
 //return a list of lists of interpolatde paths
 function findMid(p, a, b, c, d, cx, cy, n, layers, normals) {
@@ -654,6 +810,8 @@ function findMid(p, a, b, c, d, cx, cy, n, layers, normals) {
 
 //draw base color
 function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY) {
+    addLayer('Base', 100, "screen");
+
     layer1 = layers[0];
     layer2 = layers[1];
     layer3 = layers[2];
@@ -663,12 +821,7 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
     normal2 = normals[1];
     normal3 = normals[2];
     normal4 = normals[3];
-    
-    brightest = 0;
-    brightestidx = [];
 
-    darkest = 255;
-    darkestidx = [];
 
     var group = app.activeDocument.groupItems.add();
 
@@ -687,30 +840,13 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
 
-            curr_bright = (color.red + color.green + color.blue) / 3;
-
-            if (curr_bright > brightest) {
-                brightest = curr_bright;
-                brightestidx = ids;
-            }
-            if (curr_bright < darkest) {
-                darkest = curr_bright;
-                darkestidx = ids;
-            }
-
             if (mode == 2) {
                 if (i < 3) {
                     color = getColorBrighter(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
                 }
             }
-            newRect(ids, group, color, centerX);
+            newRect(ids, group, color, centerX, 100);
 
-            //normal visualization
-            //var line = app.activeDocument.pathItems.add();
-            //line.stroked = true;
-            //point = layer1[i][j];
-            //w = normal1[i][j][2] * 20 + 5;
-            //line.setEntirePath([point, [point[0] + w * normal1[i][j][0], point[1] + w * normal1[i][j][1]]]);
         }
         for (j = 0; j < layer2[0].length - 1; j++) {
             ids = [];
@@ -724,28 +860,13 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
             
-
-            curr_bright = (color.red + color.green + color.blue) / 3;
-            if (curr_bright > brightest) {
-                brightest = curr_bright;
-                brightestidx = ids;
-            }
-            if (curr_bright < darkest) {
-                darkest = curr_bright;
-                darkestidx = ids;
-            }
             if (mode == 2) {
                 if (i < 3) {
                     color = getColorBrighter(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
                 }
             }
-            newRect(ids, group, color, centerX);
-            //normal visualization
-            // var line = app.activeDocument.pathItems.add();
-            //line.stroked = true;
-            //point = layer2[i][j];
-            //w = normal2[i][j][2] * 20 + 5;
-            //line.setEntirePath([point, [point[0] + w * normal2[i][j][0], point[1] + w * normal2[i][j][1]]]);
+            newRect(ids, group, color, centerX, 100);
+ 
         }
 
         for (j = 0; j < layer3[0].length - 1; j++) {
@@ -760,29 +881,13 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
             
-
-            curr_bright = (color.red + color.green + color.blue) / 3;
-            if (curr_bright > brightest) {
-                brightest = curr_bright;
-                brightestidx = ids;
-            }
-            if (curr_bright < darkest) {
-                darkest = curr_bright;
-                darkestidx = ids;
-            }
-
             if (mode == 2) {
                 if (i < 3) {
                     color = getColorBrighter(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
                 }
             }
-            newRect(ids, group, color, centerX);
-            //normal visualization
-            //var line = app.activeDocument.pathItems.add();
-            //line.stroked = true;
-            //point = layer3[i][j];
-            //w = normal3[i][j][2] * 20 + 5;
-            //line.setEntirePath([point, [point[0] + w * normal3[i][j][0], point[1] + w * normal3[i][j][1]]]);
+            newRect(ids, group, color, centerX, 100);
+
         }
 
         for (j = 0; j < layer4[0].length - 1; j++) {
@@ -796,51 +901,233 @@ function drawBaseColor(layers, normals, mode, r, g, b, lx, ly, lz, centerX, cent
             n2 = (normal4[i][j][2] + normal4[i][j + 1][2] + normal4[i + 1][j + 1][2] + normal4[i + 1][j][2]) / 4;
             n = [n0, n1, n2];
             color = getColor(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
-            
-
-            curr_bright = (color.red + color.green + color.blue) / 3;
-            if (curr_bright > brightest) {
-                brightest = curr_bright;
-                brightestidx = ids;
-            }
-            if (curr_bright < darkest) {
-                darkest = curr_bright;
-                darkestidx = ids;
-            }
 
             if (mode == 2) {
                 if (i < 3) {
                     color = getColorBrighter(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
                 }
             }
-            newRect(ids, group, color, centerX);
-            //normal visualization
-            //var line = app.activeDocument.pathItems.add();
-            //line.stroked = true;
-            //point = layer4[i][j];
-            //w = normal4[i][j][2] * 20 + 5;
-            //line.setEntirePath([point, [point[0] + w * normal4[i][j][0], point[1] + w * normal4[i][j][1]]]);
+            newRect(ids, group, color, centerX, 100);
         }
-    }
-    if (mode == 1) { //for plastic, add external highlight 
-        hightlight(brightestidx, centerX);
-    }
-    if (mode == 3) { //for jelly, add external and internal highlight
-        hightlight(brightestidx, centerX);
-        ambiantReflection(darkestidx, centerX);
-    }
-    if (mode == 2) { //chrome
-        hightlight(brightestidx, centerX);
     }
 }
 
+function createTranslucency(layers, normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY) {
+    
+    if (mode == 3) {
+        addLayer('Translucency', 80, "lighten");
+    } else {
+        addLayer('Translucency', 80, "screen");
+    }
+    layer1 = layers[0];
+    layer2 = layers[1];
+    layer3 = layers[2];
+    layer4 = layers[3];
 
-function newRect(linepoints, group, color, centerX) {
+    normal1 = normals[0];
+    normal2 = normals[1];
+    normal3 = normals[2];
+    normal4 = normals[3];
+
+
+    var group = app.activeDocument.groupItems.add();
+
+    for (i = 0; i < layer1.length - 1; i++) {
+
+        for (j = 0; j < layer1[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer1[i][j]);
+            ids.push(layer1[i][j + 1]);
+            ids.push(layer1[i + 1][j + 1]);
+            ids.push(layer1[i + 1][j]);
+
+            n0 = -1 * (normal1[i][j][0] + normal1[i][j + 1][0] + normal1[i + 1][j + 1][0] + normal1[i + 1][j][0]) / 4;
+            n1 = -1 * (normal1[i][j][1] + normal1[i][j + 1][1] + normal1[i + 1][j + 1][1] + normal1[i + 1][j][1]) / 4;
+            n2 = (normal1[i][j][2] + normal1[i][j + 1][2] + normal1[i + 1][j + 1][2] + normal1[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100);
+        }
+        for (j = 0; j < layer2[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer2[i][j]);
+            ids.push(layer2[i][j + 1]);
+            ids.push(layer2[i + 1][j + 1]);
+            ids.push(layer2[i + 1][j]);
+            n0 = -1 * (normal2[i][j][0] + normal2[i][j + 1][0] + normal2[i + 1][j + 1][0] + normal2[i + 1][j][0]) / 4;
+            n1 = -1 * (normal2[i][j][1] + normal2[i][j + 1][1] + normal2[i + 1][j + 1][1] + normal2[i + 1][j][1]) / 4;
+            n2 = (normal2[i][j][2] + normal2[i][j + 1][2] + normal2[i + 1][j + 1][2] + normal2[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100);
+        }
+
+        for (j = 0; j < layer3[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer3[i][j]);
+            ids.push(layer3[i][j + 1]);
+            ids.push(layer3[i + 1][j + 1]);
+            ids.push(layer3[i + 1][j]);
+            n0 = -1 * (normal3[i][j][0] + normal3[i][j + 1][0] + normal3[i + 1][j + 1][0] + normal3[i + 1][j][0]) / 4;
+            n1 = -1 * (normal3[i][j][1] + normal3[i][j + 1][1] + normal3[i + 1][j + 1][1] + normal3[i + 1][j][1]) / 4;
+            n2 = (normal3[i][j][2] + normal3[i][j + 1][2] + normal3[i + 1][j + 1][2] + normal3[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100);
+        }
+
+        for (j = 0; j < layer4[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer4[i][j]);
+            ids.push(layer4[i][j + 1]);
+            ids.push(layer4[i + 1][j + 1]);
+            ids.push(layer4[i + 1][j]);
+            n0 = -1 * (normal4[i][j][0] + normal4[i][j + 1][0] + normal4[i + 1][j + 1][0] + normal4[i + 1][j][0]) / 4;
+            n1 = -1 * (normal4[i][j][1] + normal4[i][j + 1][1] + normal4[i + 1][j + 1][1] + normal4[i + 1][j][1]) / 4;
+            n2 = (normal4[i][j][2] + normal4[i][j + 1][2] + normal4[i + 1][j + 1][2] + normal4[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100);
+        }
+    }
+}
+
+function createTransparency(layers, normals, mode, r, g, b, lx, ly, lz, centerX, centerY, maxY) {
+    if (mode == 4) {
+        addLayer('Transparency', 100, "multiply");
+    } if (mode == 3) {
+        addLayer('Transparency', 100, "lighten");
+    } else {
+        addLayer('Transparency', 100, "screen");
+    }
+    
+
+    layer1 = layers[0];
+    layer2 = layers[1];
+    layer3 = layers[2];
+    layer4 = layers[3];
+
+    normal1 = normals[0];
+    normal2 = normals[1];
+    normal3 = normals[2];
+    normal4 = normals[3];
+
+    var group = app.activeDocument.groupItems.add();
+
+    for (i = 0; i < layer1.length - 1; i++) {
+
+        for (j = 0; j < layer1[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer1[i][j]);
+            ids.push(layer1[i][j + 1]);
+            ids.push(layer1[i + 1][j + 1]);
+            ids.push(layer1[i + 1][j]);
+
+            n0 = -1 * (normal1[i][j][0] + normal1[i][j + 1][0] + normal1[i + 1][j + 1][0] + normal1[i + 1][j][0]) / 4;
+            n1 = -1 * (normal1[i][j][1] + normal1[i][j + 1][1] + normal1[i + 1][j + 1][1] + normal1[i + 1][j][1]) / 4;
+            n2 = (normal1[i][j][2] + normal1[i][j + 1][2] + normal1[i + 1][j + 1][2] + normal1[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer1[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100 * (1-n2));
+        }
+        for (j = 0; j < layer2[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer2[i][j]);
+            ids.push(layer2[i][j + 1]);
+            ids.push(layer2[i + 1][j + 1]);
+            ids.push(layer2[i + 1][j]);
+            n0 = -1 * (normal2[i][j][0] + normal2[i][j + 1][0] + normal2[i + 1][j + 1][0] + normal2[i + 1][j][0]) / 4;
+            n1 = -1 * (normal2[i][j][1] + normal2[i][j + 1][1] + normal2[i + 1][j + 1][1] + normal2[i + 1][j][1]) / 4;
+            n2 = (normal2[i][j][2] + normal2[i][j + 1][2] + normal2[i + 1][j + 1][2] + normal2[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer2[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100 * (1 - n2));
+        }
+
+        for (j = 0; j < layer3[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer3[i][j]);
+            ids.push(layer3[i][j + 1]);
+            ids.push(layer3[i + 1][j + 1]);
+            ids.push(layer3[i + 1][j]);
+            n0 = -1 * (normal3[i][j][0] + normal3[i][j + 1][0] + normal3[i + 1][j + 1][0] + normal3[i + 1][j][0]) / 4;
+            n1 = -1 * (normal3[i][j][1] + normal3[i][j + 1][1] + normal3[i + 1][j + 1][1] + normal3[i + 1][j][1]) / 4;
+            n2 = (normal3[i][j][2] + normal3[i][j + 1][2] + normal3[i + 1][j + 1][2] + normal3[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer3[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100* (1 - n2));
+        }
+
+        for (j = 0; j < layer4[0].length - 1; j++) {
+            ids = [];
+            ids.push(layer4[i][j]);
+            ids.push(layer4[i][j + 1]);
+            ids.push(layer4[i + 1][j + 1]);
+            ids.push(layer4[i + 1][j]);
+            n0 = -1 * (normal4[i][j][0] + normal4[i][j + 1][0] + normal4[i + 1][j + 1][0] + normal4[i + 1][j][0]) / 4;
+            n1 = -1 * (normal4[i][j][1] + normal4[i][j + 1][1] + normal4[i + 1][j + 1][1] + normal4[i + 1][j][1]) / 4;
+            n2 = (normal4[i][j][2] + normal4[i][j + 1][2] + normal4[i + 1][j + 1][2] + normal4[i + 1][j][2]) / 4;
+            n = [n0, n1, n2];
+            color = getColor(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
+
+            if (mode == 2) {
+                if (i < 3) {
+                    color = getColorBrighter(r, g, b, n, lx, ly, lz, layer4[i][j], centerX, centerY);
+                }
+            }
+            newRect(ids, group, color, centerX, 100 * (1-n2));
+        }
+    }
+}
+function newRect(linepoints, group, color, centerX, opacity) {
     var myDoc = app.activeDocument;
     var myLine = myDoc.pathItems.add();
     myLine.stroked = false;
     myLine.filled = true;
     myLine.fillColor = color;
+    myLine.opacity = opacity;
     var num = linepoints.length;
     for (var i = 0; i < num; i++) {
         var newPoint = myLine.pathPoints.add();
@@ -968,30 +1255,63 @@ function newPath(linepoints, color, width) {
     }
 }
 
-// ------------------------------- Shade Trees
-// NODE VALUES: 
-// multiply node = -3
-// additive node = -2
-// screen node = -1
-// NULL = 0
-// base color = 1
-// highlight external = 2
-// highlight internal = 3
-// environment reflection = 4
-// internal reflection = 5
-// transparency = 6
-// translucency = 7
-
-function buildShadeTree(material) {
-    if (material == 0) {
-        return ShadeTree(ShadeNode(0, null, null));
-    } else if (material == 1) {
-        var root = ShadeNode(-1, null, null);
-        root.setLeft(ShadeNode(-1, 0, 3));
-        root.setRight(ShadeNode(1, null, null));
-        return ShadeTree(root);
-    }
+// -------------- external library: shade tree
+function LoadBasicExternalObject() 
+{
+	/**
+	 The context in which this snippet can run.
+	*/ 
+	// this.requiredContext = "\tNeed to be running in context of Bridge and the external library needs to be available\n";	
 }
+
+LoadBasicExternalObject.prototype.getLibPath = function()
+{
+
+	var isWin = (File.fs == "Windows");
+	var libFilename = (isWin) ? "ShadeTree.dll" : "ShadeTree.framework";
+	Folder.current = File ($.fileName).parent.parent;
+	
+	var libPath;
+
+	if(isWin)
+	{
+		// release
+		libPath = Folder.current.fsName + "\\vectorshade\\cpp\\build\\x64\\Release\\" + libFilename;
+		// Debug
+		//libPath = Folder.current.fsName + "\\build\\basicexternalobject\\win\x64\\Debug\\" + libFilename;
+	}
+	else //  running on mac
+	{
+		// release
+	    libPath = Folder.current.fsName + "/build/basicexternalobject/mac/Release/" + libFilename;
+		// Debug
+		//libPath = Folder.current.fsName + "/build/basicexternalobject/mac/Debug/" + libFilename;
+	}
+
+	return libPath;
+}
+
+LoadBasicExternalObject.prototype.plastic = function()
+{
+	
+	var libPath = this.getLibPath();
+	var shadeTree = new ExternalObject("lib:" + libPath);
+    var tree = shadeTree.buildTree(-1, 0, 1);
+    
+    return tree;
+}
+
+/*
+LoadBasicExternalObject.prototype.plastic = function()
+{
+	
+	var libPath = this.getLibPath();
+	var shadeTree = new ExternalObject("lib:" + libPath);
+    var tree = shadeTree.buildTree(-1, 0, 1);
+    
+    return tree;
+}
+*/
 
 // ----------------------------------------------
 

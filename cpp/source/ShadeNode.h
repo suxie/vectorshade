@@ -10,5 +10,7 @@ public:
   ShadeNode* right;
   ShadeNode* parent;
 
+  bool hasChildren();
+
 };
 

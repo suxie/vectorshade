@@ -78,14 +78,62 @@ static char* getNewBuffer(string& s)
 	return buff;
 }
 
+/*
+string printTree(ShadeNode* node, string s) {
+  if (strlen(s.c_str()) > 1) {
+    s.append(", ");
+  }
+  s.append(std::to_string(node->type));
+  s.append("[2]");
+
+  if (node->left != nullptr) {
+    s.append(", ");
+    s.append(printTree(node->left, s));
+  }
+  if (node->right != nullptr) {
+    s.append(", ");
+    s.append(printTree(node->right, s));
+  }
+
+  s.append("]");
+  return s;
+}
+*/
+
+string printTree(ShadeNode* node, string s) {
+  s.append(std::to_string(node->type));
+  s.append(", ");
+  if (node->left != nullptr) {
+    s.append(std::to_string(node->left->type));
+  }
+  else {
+    s.append("0");
+  }
+  s.append(", ");
+  if (node->right != nullptr) {
+    s.append(std::to_string(node->right->type));
+  }
+  else {
+    s.append("0");
+  }
+  if ((node->left != nullptr && node->left->hasChildren()) || 
+      (node->right != nullptr && node->right->hasChildren())) {
+    s.append(", ");
+    s.append(printTree(node->left, s));
+    s.append(", ");
+    s.append(printTree(node->right, s));
+  }
+ 
+  return s;
+}
+
 extern "C" SHADETREE_API long buildTree(TaggedData* argv, long argc, TaggedData * retval) {
 
-  // accept no arguments
-  if (argc != 3)
+  // require at least 3 arguments
+  if (argc <= 3)
   {
     return kESErrBadArgumentList;
   }
-
   
   if (argv[0].type != kTypeDouble || 
       argv[1].type != kTypeDouble ||
@@ -104,280 +152,77 @@ extern "C" SHADETREE_API long buildTree(TaggedData* argv, long argc, TaggedData 
   root->left = left.get();
   root->right = right.get();
 
+  // layer 2 
+  if (argc > 3) {
+    for (int i = 3; i < 7; i++) {
+
+    }
+  }
+  
+  // layer 3 
+  if (argc > 7) {
+    for (int i = 7; i < 14; i++) {
+
+    }
+  }
+  
+
   // The returned value type
   retval->type = kTypeScript;
 
   string s("["); 
-  s.append(std::to_string(root->type));
-  s.append(", ");
-  s.append(std::to_string(root->left->type));
-  s.append(", ");
-  s.append(std::to_string(root->right->type));
+  s = printTree(root.get(), s);
   s.append("]");
-  /*
-  s += root->type;
-  s += ", ";
-  s += root->left->type;
-  s += ", ";
-  s += root->right->type;
-  s += "]";
-  */
   
   retval->data.string = getNewBuffer(s);
 
   return kESErrOK;
 }
 
-extern "C" SHADETREE_API long makeGradient(TaggedData* argv, long argc, TaggedData * retval) {
+extern "C" SHADETREE_API long addChild(TaggedData* argv, long argc, TaggedData * retval) {
 
-  // accept no arguments
-  if (argc != 0)
+  // at least 1 argument
+  if (argc < 1)
   {
     return kESErrBadArgumentList;
+  }
+
+  if (argv[0].type != kTypeDouble) {
+    return kESErrBadArgumentList;
+  }
+
+  int type = (int) argv[0].data.fltval;
+
+  ShadeNode* curr = root.get();
+
+  for (int i = 1; i < argc - 1; i++) {
+    if (argv[i].type != kTypeDouble) {
+      return kESErrBadArgumentList;
+    }
+    if (argv[i].data.fltval == 0) {
+      curr = curr->left;
+    }
+    else {
+      curr = curr->right;
+    }
+  }
+
+  std::unique_ptr<ShadeNode> node = std::make_unique<ShadeNode>(type, nullptr, nullptr);
+  if (argv[argc - 1].data.fltval == 0) {
+    curr->left = node.get();
+  }
+  else {
+    curr->right = node.get();
   }
 
   // The returned value type
   retval->type = kTypeScript;
 
-  string s("[1, 2, 3]");
+  string s("[");
+  s = printTree(root.get(), s);
+  s.append("]");
 
   retval->data.string = getNewBuffer(s);
 
   return kESErrOK;
-}
-
-/**
-* \brief Create a three-element array as a script and returns that array.
-*
-* The return type is set to kTypeScript so when the string is returned to the 
-* scripting engine it will be evaluated and ran as a script. From JavaScript 
-* this methods accept zero arguments:
-*
- \code
- myObj.makeArray();
- \endcode
-* 
-* If the arguments are not correct then a bad argument error code is returned.
-*
-* \param argv - The JavaScript argument
-* \param argc the argument count
-* \param retval The return value to be passed back to JavaScript
-*/
-extern "C" SHADETREE_API long makeArray(TaggedData* argv, long argc, TaggedData * retval) {
-
-	// accept no arguments
-	if(argc != 0)
-	{
-		return kESErrBadArgumentList;
-	}
-
-	// The returned value type
-	retval->type = kTypeScript;
-	
-	string s ("[1, 2, 3]");
-
-	retval->data.string = getNewBuffer(s);
-	
-	return kESErrOK;
-}
-
-/**
-* Computes the average of passed integers.
-*
-* From JavaScript, this function can be called with any number of arguments.
-* The passed arguments must be numbers and not strings.  To call from JavaScript:
-*
- \code
- myObj.average(10, 20, 30);
- \endcode
-*
-* If the arguments are not correct then a bad argument error code is returned.
-*
-* \param argv - The JavaScript argument
-* \param argc the argument count
-* \param retval The return value to be passed back to JavaScript
-*/
-extern "C" SHADETREE_API long getAverage(TaggedData* argv, long argc, TaggedData* retval)
-{
-
-	// Return an error if we do not get what we expect
-	if(argv[0].type != kTypeDouble)
-	{
-		return kESErrBadArgumentList;
-	}
-
-	double sum = 0.0;
-	int i;
-	for (i = 0; i < argc; i++)
-	{
-		sum += argv [i].data.fltval; 
-	}
-
-	retval->type = kTypeDouble;
-	retval->data.fltval = sum / argc;
-	return kESErrOK;
-}
-
-/**
-* Appends a string onto the passed argument.
-*
-* This function only accepts a single argument, a String.  The passed argument
-* is appended with another string and then returned back to the scripting environment.
-* To call from JavaScript:
-*
- \code
- myObj.appendString("A String");
- \endcode
-*
-* If the arguments are not correct then a bad argument error code is returned.
-*
-* \param argv - The JavaScript argument
-* \param argc the argument count
-* \param retval The return value to be passed back to JavaScript
-*/
-extern "C" SHADETREE_API long appendString(TaggedData* argv, long argc, TaggedData * retval)
-{	
-	// Accept 1 and only 1 argument
-	if(argc != 1)
-	{
-		return kESErrBadArgumentList;
-	}
-
-	// The argument must be a string
-	if(argv[0].type != kTypeString)
-	{
-		return kESErrBadArgumentList;
-	}
-
-	// The returned value type
-	retval->type = kTypeString;
-
-	// argv[0].data.string = the string passed in from the script
-	string s (argv[0].data.string);
-	
-	// add a little bit of data onto the passed in string
-	s.append("_appended by BasicExternalObject");
-
-	retval->data.string = getNewBuffer(s);
-
-	return kESErrOK;
-}
-
-/**
-* \brief Returns a script that creates a new menu within Bridge.
-*
-* The return type is set to kTypeScript so when the string is returned to the 
-* scripting engine it will be evaluated and ran as a script.  The return script
-* creates a new MenuElement named 'BEO Menu' in the Tools menu in Bridge.
-*
-* Function accepts any number of parameters of any data type but will ignore them.
-* To call from JavaScript:
-*
- \code
- myObj.myScript();
- \endcode
-*
-* \param argv - The JavaScript argument
-* \param argc the argument count
-* \param retval The return value to be passed back to JavaScript
-*/
-extern "C" SHADETREE_API long myScript(TaggedData* argv, long argc, TaggedData* retval)
-{
-	
-	// The returned value type
-	retval->type = kTypeScript;
-
-	// Create a script to be run
-	string s("if(MenuElement.find('myBeoID') == null){");
-	s.append("MenuElement.create('menu', 'BEO Menu', '', 'myBeoID');");
-	s.append("var beoMenuItem = MenuElement.create('command', 'BEO Menu Item', 'at the end of myBeoID', 'myBeoIDsub');");
-	s.append("beoMenuItem.onSelect = function(){ alert('Menu created by BasicExternalObject'); }}");
-	
-	retval->data.string = getNewBuffer(s);
-
-	return kESErrOK;
-}
-
-/**
-* \brief accepts a single parameter of true or false.
-*
-* This methods returns a string to JavaScript describing the value
-* that was passed in as an argument.  To call from JavaScript:
-*
- \code
- myObj.acceptBoolean(true);
- \endcode
-*
-* If the arguments are not correct then a bad argument error code is returned.
-*
-* \param argv - The JavaScript argument
-* \param argc the argument count
-* \param retval The return value to be passed back to JavaScript
-*/
-extern "C" SHADETREE_API long acceptBoolean(TaggedData* argv, long argc, TaggedData* retval)
-{
-	if((argv[0].type != kTypeBool) && (argc != 1))
-	{
-		return kESErrBadArgumentList;
-	}
-
-	string s;
-	retval->type = kTypeString;
-
-	if(argv[0].data.intval)
-	{
-		s.append("Accepted a value of TRUE");
-	}
-	else
-	{
-		s.append("Accepted a value of FALSE");
-	}
-
-	retval->data.string = getNewBuffer(s);
-
-	return kESErrOK;
-
-}
-
-/**
-* \brief Free any string memory which has been returned as function result.
-*
-* \param *p Pointer to the string
-*/
-SHADETREE_API void ESFreeMem (void* p)
-{ 
-	delete(char*)(p);
-}
-
-/**
-* \brief Returns the version number of the library
-*
-* ExtendScript publishes this number as the version property of the object 
-* created by new ExternalObject.
-*/
-SHADETREE_API long ESGetVersion()
-{
-	return 0x1;
-}
-
-/**
-* \brief Initialize the library and return function signatures.
-*
-* These signatures have no effect on the arguments that can be passed to the functions.
-* They are used by JavaScript to cast the arguments, and to populate the
-* reflection interface.
-*/
-SHADETREE_API char* ESInitialize (const TaggedData ** argv, long argc) 
-{ 
-	return "makeArray,getAverage,appendString_s,myScript_a,acceptBoolean_b";
-}
-
-/**
-* \brief Terminate the library.
-*
-* Does any necessary clean up that is needed.
-*/
-SHADETREE_API void ESTerminate()
-{
-	
 }

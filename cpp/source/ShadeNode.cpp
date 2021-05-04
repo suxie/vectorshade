@@ -6,3 +6,7 @@ ShadeNode::ShadeNode(int type, ShadeNode* left, ShadeNode* right):
 ShadeNode::~ShadeNode()
 {
 }
+
+bool ShadeNode::hasChildren() {
+  return (this->left != nullptr || this->right != nullptr);
+}
